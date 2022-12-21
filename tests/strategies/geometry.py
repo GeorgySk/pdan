@@ -1,0 +1,68 @@
+from typing import (Callable,
+                    Tuple,
+                    TypeVar)
+
+from gon.base import (Contour,
+                      Point,
+                      Segment)
+from gon.base import Polygon
+from hypothesis import strategies as st
+from hypothesis_geometry import planar
+from hypothesis_geometry.hints import Strategy
+
+from pdan.pdan import slope_intercept
+from pdan.temp import TRIANGULAR_CONTOUR_SIZE
+from tests.config import (MAX_CONTOUR_SIZE,
+                          MAX_HOLES_SIZE)
+from tests.strategies.base import fractions
+
+T = TypeVar('T')
+
+QUADRILATERAL_CONTOUR_SIZE = 4
+
+convex_contours = planar.convex_contours(fractions, max_size=MAX_CONTOUR_SIZE)
+convex_polygons = st.builds(Polygon, convex_contours)
+triangle_contours = planar.convex_contours(
+    fractions, max_size=TRIANGULAR_CONTOUR_SIZE)
+quadrilateral_contours = planar.convex_contours(
+    fractions,
+    min_size=QUADRILATERAL_CONTOUR_SIZE,
+    max_size=QUADRILATERAL_CONTOUR_SIZE)
+polygons = planar.polygons(fractions,
+                           max_size=MAX_CONTOUR_SIZE,
+                           max_holes_size=MAX_HOLES_SIZE,
+                           max_hole_size=MAX_CONTOUR_SIZE)
+
+
+@st.composite
+def to_countersegments_pairs(draw: Callable[[Strategy[T]], T]
+                             ) -> Tuple[Segment, Segment]:
+    quadrilateral_contour = draw(quadrilateral_contours)
+    domain = Segment(quadrilateral_contour.vertices[0],
+                     quadrilateral_contour.vertices[1])
+    countersegment = Segment(quadrilateral_contour.vertices[2],
+                             quadrilateral_contour.vertices[3])
+    area = Polygon(Contour([domain.start, domain.end, countersegment.start])
+                   ).area
+    if countersegment.start.x != countersegment.end.x:
+        slope, intercept = slope_intercept(countersegment.start,
+                                           quadrilateral_contour.vertices[3])
+        countersegment_end_x = (
+            (2 * area + domain.end.x * (intercept - countersegment.start.y)
+             + countersegment.start.x * (domain.end.y - intercept))
+            / (slope * (countersegment.start.x - domain.end.x)
+               + domain.end.y - countersegment.start.y))
+        countersegment_end_y = (slope * countersegment_end_x
+                                + intercept)
+    else:
+        countersegment_end_x = countersegment.start.x
+        countersegment_end_y = (
+                2 * area / (countersegment.start.x - domain.end.x)
+                + countersegment.start.y)
+    countersegment = Segment(countersegment.start,
+                             Point(countersegment_end_x,
+                                   countersegment_end_y))
+    return domain, countersegment
+
+
+countersegments_pairs = to_countersegments_pairs()

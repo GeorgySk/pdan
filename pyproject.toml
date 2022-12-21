@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "pdan"
+version = "0.1.0"
+description = ""
+authors = ["GeorgySk <skorobogatov@phystech.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+gon = "^5.0.0"
+matplotlib = "^3.6.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+pytest-cov = "^4.0.0"
+hypothesis = "^6.61.0"
+hypothesis-geometry = "^7.3.0"
+
+[build-system]
+requires = ["poetry-core", "poetry>=1.0"]
+build-backend = "poetry.core.masonry.api"
