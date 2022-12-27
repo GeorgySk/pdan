@@ -2,7 +2,6 @@ from collections import deque
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
-from itertools import chain
 from typing import (Callable,
                     Iterator,
                     List,
@@ -13,8 +12,8 @@ from gon.base import (Contour,
                       EMPTY,
                       Orientation,
                       Point,
+                      Polygon,
                       Segment)
-from gon.base import Polygon
 from gon.hints import Maybe
 
 
@@ -179,96 +178,6 @@ def to_partitions(vertices: Sequence[Point],
                                             <= tail_based_triangle_area)
         is_tail_start_original = (head_based_triangle_area
                                   >= tail_based_triangle_area)
-
-
-# def to_partitions(vertices: Sequence[Point],
-#                   area_requirement: Fraction) -> Iterator[Partition]:
-#     """
-#     Returns an iterator over `Partition` objects, containing
-#     information about domain segments, their countersegments,
-#     "right" and "left" parts' vertices,
-#     where "right" vertices are all the original vertices
-#     located between the domain and countersegment when iterating
-#     in counterclockwise order, and left vertices are
-#     all the original vertices located between the countersegment and
-#     domain segment when iterating in counterclockwise order,
-#     and, finally, the area differences that should be found in the
-#     quadrilateral based on the domains and the countersegments.
-#     """
-#     tails = to_segments([*vertices, vertices[0]])
-#     heads = to_segments([*vertices[1:], *vertices])
-#     tail = next(tails)
-#     accumulated_area = 0
-#     right_vertices = deque([])
-#     left_vertices = deque([*vertices[1:], vertices[0]])
-#     for head in heads:
-#         right_vertices.append(head.start)
-#         left_vertices.popleft()
-#         covered_triangle_area = Polygon(Contour([tail.start,
-#                                                  head.start,
-#                                                  head.end])).area
-#         accumulated_area += covered_triangle_area
-#         if accumulated_area < area_requirement:
-#             continue
-#         elif accumulated_area == area_requirement:
-#             right_vertices.append(head.end)
-#             left_vertices.popleft()
-#             head = next(heads)
-#         else:
-#             area = covered_triangle_area + area_requirement - accumulated_area
-#             head_start = inverse_shoelace(area=area,
-#                                           endpoint=tail.start,
-#                                           base_start=head.start,
-#                                           base_end=head.end)
-#             right_vertices.append(head_start)
-#             head = Segment(head_start, head.end)
-#         break
-#     else:
-#         raise ValueError("Couldn't find countervertex.")
-#     while tail is not None:
-#         tail_based_triangle_area = Polygon(Contour([tail.start,
-#                                                     tail.end,
-#                                                     head.start])).area
-#         head_based_triangle_area = Polygon(Contour([tail.end,
-#                                                     head.start,
-#                                                     head.end])).area
-#         if tail_based_triangle_area < head_based_triangle_area:
-#             head_end = inverse_shoelace(area=tail_based_triangle_area,
-#                                         endpoint=tail.end,
-#                                         base_start=head.start,
-#                                         base_end=head.end)
-#             head = Segment(head.start, head_end)
-#             left_vertices.appendleft(head.end)
-#             heads = chain([Segment(left_vertices[0], left_vertices[1])], heads)
-#         elif tail_based_triangle_area > head_based_triangle_area:
-#             area_difference = (tail_based_triangle_area
-#                                - head_based_triangle_area)
-#             tail_end = inverse_shoelace(area=area_difference,
-#                                         endpoint=head.end,
-#                                         base_start=tail.end,
-#                                         base_end=tail.start)
-#             tail = Segment(tail.start, tail_end)
-#             right_vertices.appendleft(tail.end)
-#             tail_based_triangle_area = Polygon(Contour([tail.start,
-#                                                         tail.end,
-#                                                         head.start])).area
-#             tails = chain([Segment(right_vertices[0], right_vertices[1])],
-#                           tails)
-#         yield Partition(domain=tail,
-#                         countersegment=head,
-#                         right_vertices=[] if len(right_vertices) < 3 else right_vertices,
-#                         left_vertices=[] if len(left_vertices) < 3 else left_vertices,
-#                         area_difference=tail_based_triangle_area)
-#         right_vertices.popleft()
-#         right_vertices.append(head.end)
-#         if len(right_vertices) > 2 and Contour(list(right_vertices)[-3:]).orientation is Orientation.COLLINEAR:
-#             del right_vertices[-2]
-#         left_vertices.popleft()
-#         left_vertices.append(tail.end)
-#         if len(left_vertices) > 2 and Contour(list(left_vertices)[-3:]).orientation is Orientation.COLLINEAR:
-#             del left_vertices[-2]
-#         tail = next(tails, None)
-#         head = next(heads)
 
 
 def to_segments(vertices: List[Point]) -> Iterator[Segment]:

@@ -11,13 +11,13 @@ from hypothesis_geometry import planar
 from hypothesis_geometry.hints import Strategy
 
 from pdan.pdan import slope_intercept
-from pdan.temp import TRIANGULAR_CONTOUR_SIZE
 from tests.config import (MAX_CONTOUR_SIZE,
                           MAX_HOLES_SIZE)
 from tests.strategies.base import fractions
 
 T = TypeVar('T')
 
+TRIANGULAR_CONTOUR_SIZE = 3
 QUADRILATERAL_CONTOUR_SIZE = 4
 
 convex_contours = planar.convex_contours(fractions, max_size=MAX_CONTOUR_SIZE)
