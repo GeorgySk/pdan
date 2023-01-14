@@ -15,10 +15,9 @@ from tests.strategies.geometry import convex_contours
        unit_fraction=open_interval_unit_fractions)
 def test_validity(contour: Contour,
                   unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     polygon = Polygon(contour)
     area_requirement = unit_fraction * polygon.area
-    partition = next(to_partitions(vertices, area_requirement))
+    partition = next(to_partitions(contour, area_requirement))
     splitter = to_splitter(domain=partition.domain,
                            countersegment=partition.countersegment,
                            area_requirement=partition.area_difference)
@@ -36,10 +35,9 @@ def test_validity(contour: Contour,
        unit_fraction=open_interval_unit_fractions)
 def test_parts_inclusion(contour: Contour,
                          unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     polygon = Polygon(contour)
     area_requirement = unit_fraction * polygon.area
-    partition = next(to_partitions(vertices, area_requirement))
+    partition = next(to_partitions(contour, area_requirement))
     splitter = to_splitter(domain=partition.domain,
                            countersegment=partition.countersegment,
                            area_requirement=partition.area_difference)

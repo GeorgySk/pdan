@@ -20,9 +20,8 @@ from tests.strategies.geometry import convex_contours
        unit_fraction=open_interval_unit_fractions)
 def test_domains_and_images_disjoint(contour: Contour,
                                      unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     area_requirement = unit_fraction * Polygon(contour).area
-    partitions = to_partitions(vertices, area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     assert all(
         partition.domain.relate(partition.countersegment) is Relation.DISJOINT
         for partition in partitions)
@@ -32,10 +31,8 @@ def test_domains_and_images_disjoint(contour: Contour,
        unit_fraction=open_interval_unit_fractions)
 def test_segments_lengths(contour: Contour,
                           unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     area_requirement = unit_fraction * Polygon(contour).area
-    partitions = to_partitions(vertices,
-                               area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     assert all(partition.domain.length > 0
                and partition.countersegment.length > 0
                for partition in partitions)
@@ -45,9 +42,8 @@ def test_segments_lengths(contour: Contour,
        unit_fraction=open_interval_unit_fractions)
 def test_contours_validity(contour: Contour,
                            unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     area_requirement = unit_fraction * Polygon(contour).area
-    partitions = to_partitions(vertices, area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     for partition in partitions:
         if partition.right_vertices:
             Contour(partition.right_vertices).validate()
@@ -59,9 +55,8 @@ def test_contours_validity(contour: Contour,
        unit_fraction=open_interval_unit_fractions)
 def test_consecutive(contour: Contour,
                      unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     area_requirement = unit_fraction * Polygon(contour).area
-    partitions = to_partitions(vertices, area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     assert all(
         partition.domain.end == next_partition.domain.start
         and partition.countersegment.end == next_partition.countersegment.start
@@ -73,9 +68,8 @@ def test_consecutive(contour: Contour,
 def test_vertices_connection_with_segments(contour: Contour,
                                            unit_fraction: Fraction
                                            ) -> None:
-    vertices = list(contour.vertices)
     area_requirement = unit_fraction * Polygon(contour).area
-    partitions = to_partitions(vertices, area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     for partition in partitions:
         if partition.right_vertices:
             assert (partition.domain.end == partition.right_vertices[0]
@@ -90,10 +84,9 @@ def test_vertices_connection_with_segments(contour: Contour,
        unit_fraction=open_interval_unit_fractions)
 def test_inclusion(contour: Contour,
                    unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     polygon = Polygon(contour)
     area_requirement = unit_fraction * polygon.area
-    partitions = to_partitions(vertices, area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     assert all(
         partition.domain < contour and partition.countersegment < contour
         and (Polygon(Contour(partition.right_vertices)) <= polygon
@@ -112,10 +105,9 @@ def test_inclusion(contour: Contour,
 @settings(verbosity=Verbosity.verbose)
 def test_area_diff_range(contour: Contour,
                          unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     polygon = Polygon(contour)
     area_requirement = unit_fraction * polygon.area
-    partitions = to_partitions(vertices, area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     assert all(0 < partition.area_difference <= area_requirement
                for partition in partitions)
 
@@ -129,10 +121,9 @@ def test_area_diff_range(contour: Contour,
          unit_fraction=Fraction(1, 2))
 def test_sum_with_right_vertices(contour: Contour,
                                  unit_fraction: Fraction) -> None:
-    vertices = list(contour.vertices)
     polygon = Polygon(contour)
     area_requirement = unit_fraction * polygon.area
-    partitions = to_partitions(vertices, area_requirement)
+    partitions = to_partitions(contour, area_requirement)
     assert all(area_requirement == partition.area_difference
                + (Polygon(Contour(partition.right_vertices)).area
                   if partition.right_vertices else 0)
@@ -146,11 +137,11 @@ def test_total_area_of_all_parts(contour: Contour,
     vertices = list(contour.vertices)
     polygon = Polygon(contour)
     area_requirement = unit_fraction * polygon.area
-    partitions_iterators = [to_partitions(vertices, area_requirement)]
+    partitions_iterators = [to_partitions(contour, area_requirement)]
     # the following cases are too hard to generate
     for index in range(2, len(vertices) - 2):
         requirement = Polygon(Contour(vertices[:index + 1])).area
-        partitions_iterators.append(to_partitions(vertices, requirement))
+        partitions_iterators.append(to_partitions(contour, requirement))
     for partitions in partitions_iterators:
         assert all(
             polygon.area == (
