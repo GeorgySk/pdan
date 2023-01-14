@@ -45,7 +45,7 @@ def minimizing_split(contour: Contour,
     """
     if area_requirement == Polygon(contour).area:
         return contour, EMPTY
-    partitions = to_partitions(vertices=list(contour.vertices),
+    partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
     min_key_value = float('inf')
     min_key_contours = None
@@ -68,7 +68,7 @@ def minimizing_split(contour: Contour,
     return min_key_contours
 
 
-def to_partitions(vertices: Sequence[Point],
+def to_partitions(contour: Contour,
                   area_requirement: Fraction) -> Iterator[Partition]:
     """
     Returns an iterator over `Partition` objects, containing
@@ -82,12 +82,14 @@ def to_partitions(vertices: Sequence[Point],
     and, finally, the area differences that should be found in the
     quadrilateral based on the domains and the countersegments.
     """
-    tails = to_segments([*vertices, vertices[0]])
-    heads = to_segments([*vertices[1:], *vertices])
+    segments = contour.segments
+    # in gon, the last segment goes first, the first one goes second, and so on
+    tails = iter([*segments[1:], segments[0]])
+    heads = iter([*segments[2:], *segments])
     tail = next(tails)
     accumulated_area = 0
     right_vertices = deque([tail.start])
-    left_vertices = deque(vertices[1:])
+    left_vertices = deque(contour.vertices[1:])
     for head in heads:
         right_vertices.append(head.start)
         left_vertices.popleft()
@@ -178,14 +180,6 @@ def to_partitions(vertices: Sequence[Point],
                                             <= tail_based_triangle_area)
         is_tail_start_original = (head_based_triangle_area
                                   >= tail_based_triangle_area)
-
-
-def to_segments(vertices: List[Point]) -> Iterator[Segment]:
-    """
-    Returns an iterator over consecutive segments
-    built on the given list of points
-    """
-    yield from map(Segment, vertices, vertices[1:])
 
 
 def to_splitter(domain: Segment,
