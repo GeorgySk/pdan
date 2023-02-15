@@ -1,4 +1,7 @@
+from fractions import Fraction
+from functools import partial
 from typing import (Callable,
+                    List,
                     Tuple,
                     TypeVar)
 
@@ -13,6 +16,7 @@ from hypothesis_geometry.hints import Strategy
 from pdan.pdan import slope_intercept
 from tests.config import (MAX_CONTOUR_SIZE,
                           MAX_HOLES_SIZE)
+from tests.pdan_tests.utils import find_vertical_countersegment_end
 from tests.strategies.base import fractions
 
 T = TypeVar('T')
@@ -66,3 +70,37 @@ def to_countersegments_pairs(draw: Callable[[Strategy[T]], T]
 
 
 countersegments_pairs = to_countersegments_pairs()
+
+unique_coordinate_pairs = st.lists(fractions,
+                                   min_size=2,
+                                   max_size=2,
+                                   unique=True)
+unique_increasing_coordinate_pairs = unique_coordinate_pairs.map(sorted)
+unique_decreasing_coordinate_pairs = unique_coordinate_pairs.map(
+    partial(sorted, reverse=True))
+
+
+def _to_vertical_countersegments_and_area(
+        coordinates: Tuple[List[Fraction], List[Fraction], Fraction]
+        ) -> Tuple[Segment, Segment, Fraction]:
+    xs, ys_left, y_right_start = coordinates
+    domain_start = Point(xs[0], ys_left[0])
+    domain_end = Point(xs[0], ys_left[1])
+    domain = Segment(domain_start, domain_end)
+    countersegment_start = Point(xs[1], y_right_start)
+    area = Polygon(Contour([domain_start,
+                            domain_end,
+                            countersegment_start])).area
+    y_right_end = find_vertical_countersegment_end(
+        domain_end=domain_end,
+        countersegment_start=countersegment_start,
+        area=area).y
+    countersegment = Segment(Point(xs[1], y_right_start),
+                             Point(xs[1], y_right_end))
+    return domain, countersegment, area
+
+
+vertical_ccw_segments_and_areas = st.tuples(
+    unique_increasing_coordinate_pairs,
+    unique_decreasing_coordinate_pairs,
+    fractions).map(_to_vertical_countersegments_and_area)
