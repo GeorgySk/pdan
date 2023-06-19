@@ -104,3 +104,9 @@ vertical_ccw_segments_and_areas = st.tuples(
     unique_increasing_coordinate_pairs,
     unique_decreasing_coordinate_pairs,
     fractions).map(_to_vertical_countersegments_and_area)
+
+fraction_points = planar.points(fractions)
+points_pairs = st.lists(fraction_points,
+                        min_size=2,
+                        max_size=2,
+                        unique=True)
