@@ -8,6 +8,15 @@ pdan
 [![](https://img.shields.io/github/license/LostFan123/pdan.svg)](https://github.com/LostFan123/pdan/blob/master/LICENSE "License")
 [![](https://badge.fury.io/py/pdan.svg)](https://badge.fury.io/py/pdan "PyPI")
 
+Summary
+-------
+
+`pdan` is a Python library that implements the algorithm of 
+[Skorobogatov, G. et al., 2021](https://ieeexplore.ieee.org/abstract/document/9646907)
+for convex polygon decomposition into separate parts depending on the area 
+requirements.
+---
+
 In what follows
 - `python` is an alias for `python3.8` or any later
 version (`python3.9` and so on).
