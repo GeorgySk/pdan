@@ -15,6 +15,7 @@ Summary
 [Skorobogatov, G. et al., 2021](https://ieeexplore.ieee.org/abstract/document/9646907)
 for convex polygon decomposition into separate parts depending on the area 
 requirements.
+
 ---
 
 In what follows
