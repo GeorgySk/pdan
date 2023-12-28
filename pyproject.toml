@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pdan"
-version = "0.1.5"
+version = "0.1.6-alpha"
 description = ""
 authors = ["GeorgySk <skorobogatov@phystech.edu>"]
 readme = "README.md"
