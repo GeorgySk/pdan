@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pdan"
-version = "0.1.7"
+version = "0.1.8"
 description = ""
 authors = ["GeorgySk <skorobogatov@phystech.edu>"]
 readme = "README.md"
@@ -11,6 +11,7 @@ gon = "^5.0.0"
 matplotlib = "^3.6.2"
 
 [tool.poetry.group.dev.dependencies]
+bump-my-version = "^0.18.3"
 pytest = "^7.2.0"
 pytest-cov = "^4.0.0"
 hypothesis = "^6.61.0"

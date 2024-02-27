@@ -1,0 +1,25 @@
+[tool.bumpversion]
+commit = false
+tag = false
+current_version = "0.1.8"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(\\-(?P<release>[a-z]+))?"
+serialize = [
+    "{major}.{minor}.{patch}-{release}",
+    "{major}.{minor}.{patch}"
+]
+
+[[tool.bumpversion.files]]
+filename = "docker-compose.cpython.yml"
+
+[[tool.bumpversion.files]]
+filename = "pdan/__init__.py"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+
+[tool.bumpversion.parts.release]
+optional_value = "beta"
+values = [
+	"alpha",
+	"beta"
+]
