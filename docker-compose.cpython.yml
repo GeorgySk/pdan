@@ -15,5 +15,6 @@ services:
       - ./README.md:/opt/pdan/README.md
       - ./pyproject.toml:/opt/pdan/pyproject.toml
       - ./.bumpversion.toml:/opt/pdan/.bumpversion.toml
-      - ./docker-compose.cpython.yml:/opt/pdan/docker-compose.cpython.yml
-    entrypoint: pytest
+      - ./compose.yaml:/opt/pdan/compose.yaml
+    stdin_open: true
+    tty: true
