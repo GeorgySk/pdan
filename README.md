@@ -58,6 +58,7 @@ Usage
 >>> part, other = minimizing_split(contour, 0.5, key=lambda x, y: x.length)
 >>> Polygon(part).area == Polygon(other).area == 0.5
 True
+
 ```
 
 Development
