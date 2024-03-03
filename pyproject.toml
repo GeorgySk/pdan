@@ -18,5 +18,12 @@ hypothesis = "^6.61.0"
 hypothesis-geometry = "^7.3.0"
 
 [build-system]
-requires = ["poetry-core", "poetry>=1.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+source = ["pdan"]
+
+[tool.pytest.ini_options]
+addopts = "--verbose -s --hypothesis-profile=default"
+testpaths = ["tests"]

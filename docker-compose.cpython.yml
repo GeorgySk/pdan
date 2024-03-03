@@ -14,7 +14,6 @@ services:
       - ./tests/:/opt/pdan/tests/
       - ./README.md:/opt/pdan/README.md
       - ./pyproject.toml:/opt/pdan/pyproject.toml
-      - ./pytest.ini:/opt/pdan/pytest.ini
       - ./.bumpversion.toml:/opt/pdan/.bumpversion.toml
       - ./docker-compose.cpython.yml:/opt/pdan/docker-compose.cpython.yml
     entrypoint: pytest
