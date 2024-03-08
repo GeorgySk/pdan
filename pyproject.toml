@@ -25,4 +25,3 @@ source = ["pdan"]
 
 [tool.pytest.ini_options]
 addopts = "--verbose -s --hypothesis-profile=default"
-testpaths = ["tests"]
