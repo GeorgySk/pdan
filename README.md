@@ -56,7 +56,9 @@ Usage
 >>> from pdan import minimizing_split, Contour, Point, Polygon
 >>> contour = Contour([Point(0, 0), Point(1, 0), Point(1, 1), Point(0, 1)])
 >>> part, other = minimizing_split(contour, 0.5, key=lambda x, y: x.length)
->>> assert Polygon(part).area == Polygon(other).area == 0.5
+>>> Polygon(part).area == Polygon(other).area == 0.5
+True
+
 ```
 
 Development
@@ -112,7 +114,7 @@ Plain:
 
 Inside `Docker` container:
   ```bash
-  docker-compose --file docker-compose.cpython.yml up
+  docker compose up
   ```
 
 `Bash` script (e.g. can be used in `Git` hooks):

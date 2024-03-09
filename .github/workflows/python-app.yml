@@ -49,8 +49,9 @@ jobs:
       run: coverage run --append -m pytest
     - name: Collect coverage
       run: coverage xml
-    - name: Upload coverage
-      uses: codecov/codecov-action@v2.1.0
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4.0.1
       with:
-        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: GeorgySk/pdan
       continue-on-error: true
