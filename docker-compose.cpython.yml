@@ -10,11 +10,6 @@ services:
         - POETRY_VERSION=${POETRY_VERSION}
     image: lostfan123/pdan-cpython:0.1.9-alpha
     volumes:
-      - ./pdan/:/opt/pdan/pdan/
-      - ./tests/:/opt/pdan/tests/
-      - ./README.md:/opt/pdan/README.md
-      - ./pyproject.toml:/opt/pdan/pyproject.toml
-      - ./.bumpversion.toml:/opt/pdan/.bumpversion.toml
-      - ./compose.yaml:/opt/pdan/compose.yaml
+      - .:/opt/pdan
     stdin_open: true
     tty: true
