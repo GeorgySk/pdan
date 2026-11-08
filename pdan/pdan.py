@@ -45,7 +45,7 @@ def minimizing_split(contour: Contour,
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
-    min_key_value = float('inf')
+    min_key_value = float("inf")
     min_key_contours = None
     for partition in partitions:
         splitter = to_splitter(domain=partition.domain,

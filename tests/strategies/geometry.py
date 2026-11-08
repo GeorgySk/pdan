@@ -17,7 +17,7 @@ from tests.config import (MAX_CONTOUR_SIZE,
 from tests.pdan_tests.utils import find_vertical_countersegment_end
 from tests.strategies.base import fractions
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 TRIANGULAR_CONTOUR_SIZE = 3
 QUADRILATERAL_CONTOUR_SIZE = 4
