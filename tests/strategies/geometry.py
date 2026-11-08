@@ -1,7 +1,6 @@
 from fractions import Fraction
 from functools import partial
 from typing import (Callable,
-                    List,
                     TypeVar)
 
 from gon.base import (Contour,
@@ -80,7 +79,7 @@ unique_decreasing_coordinate_pairs = unique_coordinate_pairs.map(
 
 
 def _to_vertical_countersegments_and_area(
-        coordinates: tuple[List[Fraction], List[Fraction], Fraction]
+        coordinates: tuple[list[Fraction], list[Fraction], Fraction]
         ) -> tuple[Segment, Segment, Fraction]:
     xs, ys_left, y_right_start = coordinates
     domain_start = Point(xs[0], ys_left[0])

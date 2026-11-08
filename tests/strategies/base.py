@@ -1,5 +1,4 @@
 from fractions import Fraction
-from typing import List
 
 from hypothesis import strategies as st
 
@@ -36,7 +35,7 @@ metrics = st.sampled_from([lambda x, y: x.length,
                            lambda x, y: x.length * y.length])
 
 
-def normalize(requirements: List[Fraction]) -> List[Fraction]:
+def normalize(requirements: list[Fraction]) -> list[Fraction]:
     sum_ = sum(requirements)
     return [requirement / sum_ for requirement in requirements]
 

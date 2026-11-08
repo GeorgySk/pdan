@@ -4,7 +4,6 @@ from decimal import Decimal
 from fractions import Fraction
 from typing import (Callable,
                     Iterator,
-                    List,
                     Sequence)
 
 from gon.base import (Contour,
@@ -20,8 +19,8 @@ from gon.hints import Maybe
 class Partition:
     domain: Segment
     countersegment: Segment
-    right_vertices: List[Point]
-    left_vertices: List[Point]
+    right_vertices: list[Point]
+    left_vertices: list[Point]
     area_difference: Fraction
 
 
@@ -233,8 +232,8 @@ def to_splitter(domain: Segment,
 def to_right_left_contours(domain: Segment,
                            countersegment: Segment,
                            splitter: Segment,
-                           right_vertices: List[Point],
-                           left_vertices: List[Point]) -> tuple[Contour,
+                           right_vertices: list[Point],
+                           left_vertices: list[Point]) -> tuple[Contour,
                                                                 Contour]:
     """
     Constructs two contours from splitter
