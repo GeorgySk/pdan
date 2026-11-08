@@ -54,3 +54,10 @@ line-length = 79
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = [
+    # The main argument for mandatory trailing commas is that appending an
+    # item then changes only one line in a diff. We don't find that a good
+    # enough reason to require them in our code. (`ruff format` still adds
+    # them when it splits a construct over several lines.)
+    "COM812",
+]
