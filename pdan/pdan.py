@@ -5,8 +5,7 @@ from fractions import Fraction
 from typing import (Callable,
                     Iterator,
                     List,
-                    Sequence,
-                    Tuple)
+                    Sequence)
 
 from gon.base import (Contour,
                       EMPTY,
@@ -30,7 +29,7 @@ def minimizing_split(contour: Contour,
                      area_requirement: Fraction,
                      *,
                      key: Callable[[Contour, Contour], Fraction]
-                     ) -> Tuple[Contour, Maybe[Contour]]:
+                     ) -> tuple[Contour, Maybe[Contour]]:
     """
     Splits convex polygon defined by the input contour,
     finds the part with the given area requirement that yields
@@ -235,7 +234,7 @@ def to_right_left_contours(domain: Segment,
                            countersegment: Segment,
                            splitter: Segment,
                            right_vertices: List[Point],
-                           left_vertices: List[Point]) -> Tuple[Contour,
+                           left_vertices: List[Point]) -> tuple[Contour,
                                                                 Contour]:
     """
     Constructs two contours from splitter
@@ -495,7 +494,7 @@ def inverse_shoelace(area: Fraction,
     return Point(x, y)
 
 
-def slope_intercept(start: Point, end: Point) -> Tuple[Fraction, Fraction]:
+def slope_intercept(start: Point, end: Point) -> tuple[Fraction, Fraction]:
     slope = (end.y - start.y) / (end.x - start.x)
     intercept = end.y - slope * end.x
     return slope, intercept

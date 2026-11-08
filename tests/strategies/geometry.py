@@ -2,7 +2,6 @@ from fractions import Fraction
 from functools import partial
 from typing import (Callable,
                     List,
-                    Tuple,
                     TypeVar)
 
 from gon.base import (Contour,
@@ -40,7 +39,7 @@ polygons = planar.polygons(fractions,
 
 @st.composite
 def to_countersegments_pairs(draw: Callable[[Strategy[T]], T]
-                             ) -> Tuple[Segment, Segment]:
+                             ) -> tuple[Segment, Segment]:
     quadrilateral_contour = draw(quadrilateral_contours)
     domain = Segment(quadrilateral_contour.vertices[0],
                      quadrilateral_contour.vertices[1])
@@ -81,8 +80,8 @@ unique_decreasing_coordinate_pairs = unique_coordinate_pairs.map(
 
 
 def _to_vertical_countersegments_and_area(
-        coordinates: Tuple[List[Fraction], List[Fraction], Fraction]
-        ) -> Tuple[Segment, Segment, Fraction]:
+        coordinates: tuple[List[Fraction], List[Fraction], Fraction]
+        ) -> tuple[Segment, Segment, Fraction]:
     xs, ys_left, y_right_start = coordinates
     domain_start = Point(xs[0], ys_left[0])
     domain_end = Point(xs[0], ys_left[1])
