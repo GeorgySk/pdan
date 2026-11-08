@@ -61,3 +61,8 @@ ignore = [
     # them when it splits a construct over several lines.)
     "COM812",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Test functions are named after what they check, so they don't need
+# docstrings.
+"tests/**" = ["D103"]

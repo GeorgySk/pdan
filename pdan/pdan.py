@@ -462,6 +462,12 @@ def is_after_domain(value: Fraction,
 
 
 def robust_sqrt(fraction: Fraction) -> Fraction:
+    """
+    Returns square root of the given fraction computed with `Decimal`
+    precision and converted back to `Fraction`.
+    :param fraction: non-negative number to take square root of
+    :return: square root of the fraction
+    """
     return Fraction((fraction.numerator
                      / Decimal(fraction.denominator)).sqrt())
 
@@ -494,6 +500,13 @@ def inverse_shoelace(area: Fraction,
 
 
 def slope_intercept(start: Point, end: Point) -> tuple[Fraction, Fraction]:
+    """
+    Returns slope and intercept of the line passing through two points
+    with different X coordinates.
+    :param start: first point on the line
+    :param end: second point on the line
+    :return: slope and intercept of the line
+    """
     slope = (end.y - start.y) / (end.x - start.x)
     intercept = end.y - slope * end.x
     return slope, intercept
