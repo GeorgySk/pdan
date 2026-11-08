@@ -1,12 +1,16 @@
 from fractions import Fraction
 
-from gon.base import Contour
-from gon.base import Polygon
+from gon.base import (
+    Contour,
+    Polygon,
+)
 from hypothesis import given
 
-from pdan.pdan import (to_right_left_contours,
-                       to_partitions,
-                       to_splitter)
+from pdan.pdan import (
+    to_partitions,
+    to_right_left_contours,
+    to_splitter,
+)
 from tests.strategies.base import open_interval_unit_fractions
 from tests.strategies.geometry import convex_contours
 

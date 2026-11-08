@@ -1,10 +1,14 @@
 from gon.base import Point
-from hypothesis import (assume,
-                        given)
+from hypothesis import (
+    assume,
+    given,
+)
 
 from pdan.pdan import slope_intercept
-from tests.strategies.geometry import (fraction_points,
-                                       points_pairs)
+from tests.strategies.geometry import (
+    fraction_points,
+    points_pairs,
+)
 
 
 @given(points_pairs)

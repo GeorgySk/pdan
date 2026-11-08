@@ -1,17 +1,21 @@
 from collections import deque
-from collections.abc import (Callable,
-                             Iterator,
-                             Sequence)
+from collections.abc import (
+    Callable,
+    Iterator,
+    Sequence,
+)
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
 
-from gon.base import (Contour,
-                      EMPTY,
-                      Orientation,
-                      Point,
-                      Polygon,
-                      Segment)
+from gon.base import (
+    EMPTY,
+    Contour,
+    Orientation,
+    Point,
+    Polygon,
+    Segment,
+)
 from gon.hints import Maybe
 
 

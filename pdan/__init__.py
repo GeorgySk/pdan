@@ -5,7 +5,9 @@ __author__ = "Georgy Skorobogatov"
 __email__ = "skorobogatovgeorgy+github@gmail.com"
 __version__ = "0.2.0"
 
-from .pdan import (minimizing_split,
-                   Contour,
-                   Point,
-                   Polygon)
+from .pdan import (
+    Contour,
+    Point,
+    Polygon,
+    minimizing_split,
+)

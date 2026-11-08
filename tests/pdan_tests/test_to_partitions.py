@@ -1,14 +1,18 @@
 from fractions import Fraction
 
-from gon.base import (Point,
-                      Relation)
-from gon.base import (Contour,
-                        Segment)
-from gon.base import Polygon
-from hypothesis import (Verbosity,
-                        example,
-                        given,
-                        settings)
+from gon.base import (
+    Contour,
+    Point,
+    Polygon,
+    Relation,
+    Segment,
+)
+from hypothesis import (
+    Verbosity,
+    example,
+    given,
+    settings,
+)
 
 from pdan.pdan import to_partitions
 from tests.pdan_tests.utils import pairwise

@@ -2,10 +2,12 @@ from fractions import Fraction
 
 from hypothesis import strategies as st
 
-from tests.config import (MAX_COORDINATE,
-                          MAX_DENOMINATOR,
-                          MAX_REQUIREMENTS_COUNT,
-                          MIN_COORDINATE)
+from tests.config import (
+    MAX_COORDINATE,
+    MAX_DENOMINATOR,
+    MAX_REQUIREMENTS_COUNT,
+    MIN_COORDINATE,
+)
 
 MIN_AREA_FRACTION = 0
 MAX_AREA_FRACTION = 1

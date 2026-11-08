@@ -1,8 +1,10 @@
 from numbers import Real
 
-from gon.base import (Contour,
-                        Segment)
-from gon.base import Polygon
+from gon.base import (
+    Contour,
+    Polygon,
+    Segment,
+)
 from hypothesis import given
 
 from pdan.pdan import inverse_shoelace

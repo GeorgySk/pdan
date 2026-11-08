@@ -2,15 +2,21 @@ from collections.abc import Callable
 from fractions import Fraction
 from numbers import Real
 
-from gon.base import Contour
-from gon.base import Polygon
-from hypothesis import (example,
-                        given,
-                        settings)
+from gon.base import (
+    Contour,
+    Polygon,
+)
+from hypothesis import (
+    example,
+    given,
+    settings,
+)
 
 from pdan.pdan import minimizing_split
-from tests.strategies.base import (metrics,
-                                   open_interval_unit_fractions)
+from tests.strategies.base import (
+    metrics,
+    open_interval_unit_fractions,
+)
 from tests.strategies.geometry import convex_contours
 
 

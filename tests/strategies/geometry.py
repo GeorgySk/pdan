@@ -3,17 +3,21 @@ from fractions import Fraction
 from functools import partial
 from typing import TypeVar
 
-from gon.base import (Contour,
-                      Point,
-                      Segment)
-from gon.base import Polygon
+from gon.base import (
+    Contour,
+    Point,
+    Polygon,
+    Segment,
+)
 from hypothesis import strategies as st
 from hypothesis_geometry import planar
 from hypothesis_geometry.hints import Strategy
 
 from pdan.pdan import slope_intercept
-from tests.config import (MAX_CONTOUR_SIZE,
-                          MAX_HOLES_SIZE)
+from tests.config import (
+    MAX_CONTOUR_SIZE,
+    MAX_HOLES_SIZE,
+)
 from tests.pdan_tests.utils import find_vertical_countersegment_end
 from tests.strategies.base import fractions
 

@@ -1,8 +1,12 @@
-from gon.base import (Contour,
-                        Segment)
-from gon.base import Polygon
-from hypothesis import (example,
-                        given)
+from gon.base import (
+    Contour,
+    Polygon,
+    Segment,
+)
+from hypothesis import (
+    example,
+    given,
+)
 
 from pdan.pdan import to_splitter
 from tests.strategies.geometry import countersegments_pairs
