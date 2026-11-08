@@ -1,7 +1,7 @@
+from collections.abc import Callable
 from fractions import Fraction
 from functools import partial
-from typing import (Callable,
-                    TypeVar)
+from typing import TypeVar
 
 from gon.base import (Contour,
                       Point,

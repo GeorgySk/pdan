@@ -1,6 +1,6 @@
+from collections.abc import Callable
 from fractions import Fraction
 from numbers import Real
-from typing import Callable
 
 from gon.base import Contour
 from gon.base import Polygon
