@@ -53,4 +53,4 @@ strict = true
 line-length = 79
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "B", "I"]
+select = ["ALL"]
