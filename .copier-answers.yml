@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.28.1
+_src_path: gh:GeorgySk/copier-pypackage
+ci_provider: github
+email: skorobogatovgeorgy+github@gmail.com
+full_name: Georgy Skorobogatov
+github_username: GeorgySk
+open_source_license: MIT license
+project_name: pdan
+project_short_description: Implementation of the algorithm by Skorobogatov et al.,
+    2021, for decomposition of convex polygons.
+project_slug: pdan
+python_version: '3.11'
+use_devcontainer: true
+use_docker_compose: true
+version: 0.2.0

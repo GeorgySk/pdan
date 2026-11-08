@@ -1,0 +1,17 @@
+{
+  "name": "pdan",
+  "dockerComposeFile": ["../compose.yaml", "compose.devcontainer.yaml"],
+  "service": "pdan",
+  "overrideCommand": true,
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+  "workspaceFolder": "/opt/pdan",
+  "onCreateCommand": "bash /opt/pdan/.devcontainer/setup_user.sh",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": ["charliermarsh.ruff"]
+    }
+  }
+}
