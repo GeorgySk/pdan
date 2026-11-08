@@ -60,6 +60,11 @@ ignore = [
     # enough reason to require them in our code. (`ruff format` still adds
     # them when it splits a construct over several lines.)
     "COM812",
+    # The MIT license only requires its copyright notice to accompany copies
+    # of the work, and the LICENSE file already does that for the whole
+    # package. Per-file copyright headers would add boilerplate without any
+    # legal benefit.
+    "CPY001",
 ]
 
 [tool.ruff.lint.per-file-ignores]
