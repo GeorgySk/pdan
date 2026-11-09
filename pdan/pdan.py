@@ -190,7 +190,7 @@ def to_splitter(domain: Segment,
     For the given "domain" and its corresponding "countersegment",
     finds another "splitter" segment connecting these two
     so that the area on the right would be
-    equal to the given area requirement
+    equal to the given area requirement.
     """
     if (domain.start.x == domain.end.x
             and countersegment.end.x == countersegment.start.x):
@@ -241,7 +241,7 @@ def to_right_left_contours(domain: Segment,
     """
     Constructs two contours from splitter
     and vertices delimiting right and left parts
-    based on the splitter's endpoints location
+    based on the splitter's endpoints location.
     """
     if not right_vertices:
         if splitter.start == domain.start:
@@ -291,7 +291,7 @@ def vertical_segments_splitter(area_requirement: Fraction,
     Finds segment connecting two vertical "domain"
     and "countersegment" segments
     so that the area on the right would be
-    equal to the area requirement
+    equal to the area requirement.
     """
     tail_y = ((2 * area_requirement
                + countersegment.start.x * countersegment.start.y
@@ -315,7 +315,7 @@ def vertical_domain_splitter(area_requirement: Fraction,
     Finds segment connecting a vertical "domain"
     and an inclined "countersegment" segments
     so that the area on the right would be
-    equal to the area requirement
+    equal to the area requirement.
     """
     slope, intercept = slope_intercept(countersegment.start,
                                        countersegment.end)
@@ -350,7 +350,7 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
     Finds segment connecting an inclined "domain"
     and a vertical "countersegment" segments
     so that the area on the right would be
-    equal to the area requirement
+    equal to the area requirement.
     """
     slope, intercept = slope_intercept(domain.start, domain.end)
     const = (2 * area_requirement
@@ -387,7 +387,7 @@ def parallel_inclined_segments_splitter(area_requirement: Fraction,
     """
     Finds segment connecting parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
-    would be equal to the area requirement
+    would be equal to the area requirement.
     """
     tail_x = (area_requirement / intercept_diff
               + (domain.end.x + countersegment.start.x) / 2
@@ -416,7 +416,7 @@ def general_case_splitter(area_requirement: Fraction,
     """
     Finds segment connecting non-parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
-    would be equal to the area requirement
+    would be equal to the area requirement.
     """
     slope_diff = domain_slope - image_slope
     const = (2 * area_requirement
@@ -449,7 +449,7 @@ def is_before_domain(value: Fraction,
                      end: Fraction) -> bool:
     """
     Checks if X or Y coordinate of the segment's tail
-    was found before the starting vertex of the "domain"
+    was found before the starting vertex of the "domain".
     """
     return value <= start < end or value >= start > end
 
@@ -459,7 +459,7 @@ def is_after_domain(value: Fraction,
                     end: Fraction) -> bool:
     """
     Checks if X or Y coordinate of the segment's tail
-    was found after the second vertex of the "domain"
+    was found after the second vertex of the "domain".
     """
     return value >= end > start or value <= end < start
 
@@ -469,7 +469,7 @@ def robust_sqrt(fraction: Fraction) -> Fraction:
     Returns square root of the given fraction computed with `Decimal`
     precision and converted back to `Fraction`.
     :param fraction: non-negative number to take square root of
-    :return: square root of the fraction
+    :return: square root of the fraction.
     """
     return Fraction((fraction.numerator
                      / Decimal(fraction.denominator)).sqrt())
@@ -508,7 +508,7 @@ def slope_intercept(start: Point, end: Point) -> tuple[Fraction, Fraction]:
     with different X coordinates.
     :param start: first point on the line
     :param end: second point on the line
-    :return: slope and intercept of the line
+    :return: slope and intercept of the line.
     """
     slope = (end.y - start.y) / (end.x - start.x)
     intercept = end.y - slope * end.x
