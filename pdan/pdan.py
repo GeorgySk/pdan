@@ -72,7 +72,7 @@ def minimizing_split(contour: Contour,
     return min_key_contours
 
 
-def to_partitions(contour: Contour,
+def to_partitions(contour: Contour,  # noqa: PLR0915
                   area_requirement: Fraction) -> Iterator[Partition]:
     """
     Returns an iterator over `Partition` objects of the given contour.
