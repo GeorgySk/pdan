@@ -163,10 +163,12 @@ def to_partitions(contour: Contour,
             tail = Segment(domain_end, tail.end)
             head = next(heads)
         countersegment = Segment(countervertex, image_end)
-        resulting_right_vertices = (list(right_vertices)
-                                    if len(right_vertices) > 2 else [])
-        resulting_left_vertices = (list(left_vertices)
-                                   if len(left_vertices) > 2 else [])
+        right_vertices_list = list(right_vertices)
+        resulting_right_vertices = (right_vertices_list
+                                    if right_vertices_list[1:-1] else [])
+        left_vertices_list = list(left_vertices)
+        resulting_left_vertices = (left_vertices_list
+                                   if left_vertices_list[1:-1] else [])
         yield Partition(domain=domain,
                         countersegment=countersegment,
                         right_vertices=resulting_right_vertices,
