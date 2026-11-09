@@ -82,4 +82,5 @@ ignore = [
 "tests/**" = [
     "D100", "D103", "D104",  # tests don't need docstrings
     "S101",  # it's expected to have `assert` in tests
+    "E731",  # lambdas are handy for defining simple test keys
 ]
