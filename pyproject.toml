@@ -69,6 +69,13 @@ ignore = [
     # package. Per-file copyright headers would add boilerplate without any
     # legal benefit.
     "CPY001",
+    # Moving third-party imports used only in annotations under
+    # `if TYPE_CHECKING:` saves their import cost only if nothing else
+    # imports them at runtime. A package's runtime dependencies are usually
+    # imported by the package itself anyway, so nothing is saved. Meanwhile
+    # the annotations can no longer be resolved at runtime (for example, by
+    # `typing.get_type_hints`), and every module gets an extra block.
+    "TC002",
 ]
 
 [tool.ruff.lint.per-file-ignores]
