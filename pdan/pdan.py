@@ -77,7 +77,7 @@ def minimizing_split(contour: Contour,
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
-    min_key_value = float("inf")
+    min_key_value: Fraction | None = None
     min_key_contours = None
     for partition in partitions:
         splitter = to_splitter(domain=partition.domain,
@@ -90,7 +90,7 @@ def minimizing_split(contour: Contour,
             right_vertices=partition.right_vertices,
             left_vertices=partition.left_vertices)
         key_value = key(right_contour, left_contour)
-        if key_value < min_key_value:
+        if min_key_value is None or key_value < min_key_value:
             min_key_contours = right_contour, left_contour
             min_key_value = key_value
     if min_key_contours is None:
