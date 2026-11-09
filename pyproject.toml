@@ -57,8 +57,7 @@ select = ["ALL"]
 ignore = [
     # The main argument for mandatory trailing commas is that appending an
     # item then changes only one line in a diff. We don't find that a good
-    # enough reason to require them in our code. (`ruff format` still adds
-    # them when it splits a construct over several lines.)
+    # enough reason to require them in our code.
     "COM812",
     # `zip()` without `strict=` already behaves as `strict=False`, which
     # anyone familiar with Python knows, so spelling out the default only
@@ -90,8 +89,8 @@ ignore = [
     "D212",
     # D203 and D211 are mutually exclusive: the former wants a blank line
     # between a class statement and its docstring, the latter forbids one.
-    # `ruff format` removes such blank lines, and current PEP 257 doesn't
-    # ask for them, so we ignore D203 and keep D211.
+    # Current PEP 257 doesn't ask for such blank lines, so we ignore D203
+    # and keep D211.
     "D203",
     # EM101 and EM102 want exception messages assigned to a variable before
     # `raise`, only so that a traceback doesn't show the message twice (once
