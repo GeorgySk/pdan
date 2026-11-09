@@ -262,11 +262,7 @@ def to_right_left_contours(domain: Segment,
                                      countersegment.start, splitter.end])
     else:
         if domain.end in Segment(splitter.start, right_vertices[1]):
-            try:
-                right_vertices = right_vertices[1:]
-            except TypeError:
-                print("right_vertices == ", right_vertices)
-                raise TypeError
+            right_vertices = right_vertices[1:]
         if countersegment.start in Segment(right_vertices[-2], splitter.end):
             right_vertices = right_vertices[:-1]
         right_contour = Contour([splitter.start,
