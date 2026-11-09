@@ -39,11 +39,11 @@ class Partition:
     :ivar domain: segment of the boundary where a splitter starts
     :ivar countersegment: segment of the boundary where a splitter ends
     :ivar right_vertices: vertices going counterclockwise from `domain`
-    to `countersegment`; empty if there are none between them
+        to `countersegment`; empty if there are none between them
     :ivar left_vertices: vertices going counterclockwise from
-    `countersegment` to `domain`; empty if there are none between them
+        `countersegment` to `domain`; empty if there are none between them
     :ivar area_difference: area to cut off from the quadrilateral
-    between `domain` and `countersegment`
+        between `domain` and `countersegment`
     """
 
     domain: Segment
@@ -70,8 +70,8 @@ def minimizing_split(contour: Contour,
     :param area_requirement: area of a part to return
     :param key: function to be applied to a pair of contours
     :return: two contours if the area requirement is not zero
-    or equal to area of the polygon; one contour and empty geometry
-    otherwise.
+        or equal to area of the polygon; one contour and empty geometry
+        otherwise.
     """
     if area_requirement == Polygon(contour).area:
         return contour, EMPTY
