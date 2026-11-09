@@ -1,16 +1,18 @@
-from typing import List
-
 from gon.base import Point
-from hypothesis import (assume,
-                        given)
+from hypothesis import (
+    assume,
+    given,
+)
 
 from pdan.pdan import slope_intercept
-from tests.strategies.geometry import (fraction_points,
-                                       points_pairs)
+from tests.strategies.geometry import (
+    fraction_points,
+    points_pairs,
+)
 
 
 @given(points_pairs)
-def test_commutativity(points_pair: List[Point]) -> None:
+def test_commutativity(points_pair: list[Point]) -> None:
     first, second = points_pair
     assume(first.x != second.x)
     first_slope, first_intercept = slope_intercept(first, second)

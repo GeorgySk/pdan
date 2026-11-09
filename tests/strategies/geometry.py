@@ -1,25 +1,22 @@
 from fractions import Fraction
 from functools import partial
-from typing import (Callable,
-                    List,
-                    Tuple,
-                    TypeVar)
 
-from gon.base import (Contour,
-                      Point,
-                      Segment)
-from gon.base import Polygon
+from gon.base import (
+    Contour,
+    Point,
+    Polygon,
+    Segment,
+)
 from hypothesis import strategies as st
 from hypothesis_geometry import planar
-from hypothesis_geometry.hints import Strategy
 
 from pdan.pdan import slope_intercept
-from tests.config import (MAX_CONTOUR_SIZE,
-                          MAX_HOLES_SIZE)
+from tests.config import (
+    MAX_CONTOUR_SIZE,
+    MAX_HOLES_SIZE,
+)
 from tests.pdan_tests.utils import find_vertical_countersegment_end
 from tests.strategies.base import fractions
-
-T = TypeVar('T')
 
 TRIANGULAR_CONTOUR_SIZE = 3
 QUADRILATERAL_CONTOUR_SIZE = 4
@@ -39,8 +36,7 @@ polygons = planar.polygons(fractions,
 
 
 @st.composite
-def to_countersegments_pairs(draw: Callable[[Strategy[T]], T]
-                             ) -> Tuple[Segment, Segment]:
+def to_countersegments_pairs(draw: st.DrawFn) -> tuple[Segment, Segment]:
     quadrilateral_contour = draw(quadrilateral_contours)
     domain = Segment(quadrilateral_contour.vertices[0],
                      quadrilateral_contour.vertices[1])
@@ -81,8 +77,8 @@ unique_decreasing_coordinate_pairs = unique_coordinate_pairs.map(
 
 
 def _to_vertical_countersegments_and_area(
-        coordinates: Tuple[List[Fraction], List[Fraction], Fraction]
-        ) -> Tuple[Segment, Segment, Fraction]:
+        coordinates: tuple[list[Fraction], list[Fraction], Fraction]
+        ) -> tuple[Segment, Segment, Fraction]:
     xs, ys_left, y_right_start = coordinates
     domain_start = Point(xs[0], ys_left[0])
     domain_end = Point(xs[0], ys_left[1])

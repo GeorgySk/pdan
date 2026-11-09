@@ -1,8 +1,11 @@
+from fractions import Fraction
 from numbers import Real
 
-from gon.base import (Contour,
-                        Segment)
-from gon.base import Polygon
+from gon.base import (
+    Contour,
+    Polygon,
+    Segment,
+)
 from hypothesis import given
 
 from pdan.pdan import inverse_shoelace
@@ -26,7 +29,7 @@ def test_boundary_inclusion(triangle_contour: Contour,
 @given(triangle_contours)
 def test_endpoints(triangle_contour: Contour) -> None:
     endpoint, base_start, base_end = triangle_contour.vertices
-    point = inverse_shoelace(area=0,
+    point = inverse_shoelace(area=Fraction(0),
                              endpoint=endpoint,
                              base_start=base_start,
                              base_end=base_end)

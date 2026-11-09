@@ -1,12 +1,13 @@
 from fractions import Fraction
-from typing import List
 
 from hypothesis import strategies as st
 
-from tests.config import (MAX_COORDINATE,
-                          MAX_DENOMINATOR,
-                          MAX_REQUIREMENTS_COUNT,
-                          MIN_COORDINATE)
+from tests.config import (
+    MAX_COORDINATE,
+    MAX_DENOMINATOR,
+    MAX_REQUIREMENTS_COUNT,
+    MIN_COORDINATE,
+)
 
 MIN_AREA_FRACTION = 0
 MAX_AREA_FRACTION = 1
@@ -31,12 +32,12 @@ unit_fractions = st.fractions(MIN_AREA_FRACTION,
                               MAX_AREA_FRACTION,
                               max_denominator=MAX_DENOMINATOR)
 open_interval_unit_fractions = unit_fractions.filter(is_in_open_unit_interval)
-metrics = st.sampled_from([lambda x, y: x.length,
+metrics = st.sampled_from([lambda x, _: x.length,
                            lambda x, y: x.length + y.length,
                            lambda x, y: x.length * y.length])
 
 
-def normalize(requirements: List[Fraction]) -> List[Fraction]:
+def normalize(requirements: list[Fraction]) -> list[Fraction]:
     sum_ = sum(requirements)
     return [requirement / sum_ for requirement in requirements]
 

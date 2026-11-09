@@ -1,16 +1,18 @@
+from collections.abc import Callable
 from fractions import Fraction
 from numbers import Real
-from typing import Callable
 
-from gon.base import Contour
-from gon.base import Polygon
-from hypothesis import (example,
-                        given,
-                        settings)
+from gon.base import (
+    Contour,
+    Polygon,
+)
+from hypothesis import given
 
 from pdan.pdan import minimizing_split
-from tests.strategies.base import (metrics,
-                                   open_interval_unit_fractions)
+from tests.strategies.base import (
+    metrics,
+    open_interval_unit_fractions,
+)
 from tests.strategies.geometry import convex_contours
 
 
@@ -21,7 +23,7 @@ def test_area(contour: Contour,
               unit_fraction: Real,
               key: Callable[[Contour, Contour], Fraction]) -> None:
     area_requirement = unit_fraction * Polygon(contour).area
-    key = lambda x, y: x.length
+    key = lambda x, _: x.length
     part, rest = minimizing_split(contour,
                                   area_requirement=area_requirement,
                                   key=key)

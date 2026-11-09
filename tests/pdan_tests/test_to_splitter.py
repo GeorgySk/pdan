@@ -1,17 +1,16 @@
-from typing import Tuple
-
-from gon.base import (Contour,
-                        Segment)
-from gon.base import Polygon
-from hypothesis import (example,
-                        given)
+from gon.base import (
+    Contour,
+    Polygon,
+    Segment,
+)
+from hypothesis import given
 
 from pdan.pdan import to_splitter
 from tests.strategies.geometry import countersegments_pairs
 
 
 @given(countersegments_pair=countersegments_pairs)
-def test_endpoints_location(countersegments_pair: Tuple[Segment, Segment]
+def test_endpoints_location(countersegments_pair: tuple[Segment, Segment]
                             ) -> None:
     domain, countersegment = countersegments_pair
     area_requirement = Polygon(Contour([domain.start, domain.end,
@@ -19,11 +18,12 @@ def test_endpoints_location(countersegments_pair: Tuple[Segment, Segment]
     splitter = to_splitter(domain=domain,
                            countersegment=countersegment,
                            area_requirement=area_requirement)
-    assert splitter.start in domain and splitter.end in countersegment
+    assert splitter.start in domain
+    assert splitter.end in countersegment
 
 
 @given(countersegments_pairs=countersegments_pairs)
-def test_area(countersegments_pairs: Tuple[Segment, Segment]) -> None:
+def test_area(countersegments_pairs: tuple[Segment, Segment]) -> None:
     domain, countersegment = countersegments_pairs
     area_requirement = Polygon(Contour([domain.start, domain.end,
                                         countersegment.start])).area
@@ -40,7 +40,7 @@ def test_area(countersegments_pairs: Tuple[Segment, Segment]) -> None:
 
 
 @given(countersegments_pairs=countersegments_pairs)
-def test_perimeter_inequalities(countersegments_pairs: Tuple[Segment, Segment]
+def test_perimeter_inequalities(countersegments_pairs: tuple[Segment, Segment]
                                 ) -> None:
     domain, countersegment = countersegments_pairs
     area_requirement = Polygon(Contour([domain.start, domain.end,

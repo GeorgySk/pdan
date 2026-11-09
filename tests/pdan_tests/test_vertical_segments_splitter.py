@@ -1,4 +1,3 @@
-from __future__ import annotations
 from fractions import Fraction
 
 from gon.base import Segment

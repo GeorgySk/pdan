@@ -1,28 +1,55 @@
+"""
+Splits convex polygons into two parts with a given area.
+
+Implements the algorithm of Skorobogatov et al., 2021, which finds
+among all splits of a convex polygon that cut off a part with
+the given area the one that minimizes a user-supplied `key` function.
+"""
+
 from collections import deque
+from collections.abc import (
+    Callable,
+    Iterator,
+)
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import (Callable,
-                    Iterator,
-                    List,
-                    Sequence,
-                    Tuple)
 
-from gon.base import (Contour,
-                      EMPTY,
-                      Orientation,
-                      Point,
-                      Polygon,
-                      Segment)
+from gon.base import (
+    EMPTY,
+    Contour,
+    Orientation,
+    Point,
+    Polygon,
+    Segment,
+)
 from gon.hints import Maybe
 
 
 @dataclass
 class Partition:
+    """
+    Describes a candidate place to split the polygon.
+
+    Holds a "domain" segment and its "countersegment" on the polygon
+    boundary, the vertices of the polygon lying on each side between
+    them, and the area that a splitter segment connecting the two
+    still has to cut off.
+
+    :ivar domain: segment of the boundary where a splitter starts
+    :ivar countersegment: segment of the boundary where a splitter ends
+    :ivar right_vertices: vertices going counterclockwise from `domain`
+        to `countersegment`; empty if there are none between them
+    :ivar left_vertices: vertices going counterclockwise from
+        `countersegment` to `domain`; empty if there are none between them
+    :ivar area_difference: area to cut off from the quadrilateral
+        between `domain` and `countersegment`
+    """
+
     domain: Segment
     countersegment: Segment
-    right_vertices: List[Point]
-    left_vertices: List[Point]
+    right_vertices: list[Point]
+    left_vertices: list[Point]
     area_difference: Fraction
 
 
@@ -30,24 +57,27 @@ def minimizing_split(contour: Contour,
                      area_requirement: Fraction,
                      *,
                      key: Callable[[Contour, Contour], Fraction]
-                     ) -> Tuple[Contour, Maybe[Contour]]:
+                     ) -> tuple[Contour, Maybe[Contour]]:
     """
-    Splits convex polygon defined by the input contour,
-    finds the part with the given area requirement that yields
-    the minimum possible value when applied to `key` function,
-    and returns it along with the remaining part as contours.
+    Splits convex polygon into two parts minimizing `key` function.
+
+    Finds the part of the polygon defined by the input contour
+    with the given area requirement that yields the minimum possible
+    value when applied to `key` function, and returns it along with
+    the remaining part as contours.
+
     :param contour: defines a convex polygon
     :param area_requirement: area of a part to return
     :param key: function to be applied to a pair of contours
     :return: two contours if the area requirement is not zero
-    or equal to area of the polygon; one contour and empty geometry
-    otherwise.
+        or equal to area of the polygon; one contour and empty geometry
+        otherwise.
     """
     if area_requirement == Polygon(contour).area:
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
-    min_key_value = float('inf')
+    min_key_value: Fraction | None = None
     min_key_contours = None
     for partition in partitions:
         splitter = to_splitter(domain=partition.domain,
@@ -60,7 +90,7 @@ def minimizing_split(contour: Contour,
             right_vertices=partition.right_vertices,
             left_vertices=partition.left_vertices)
         key_value = key(right_contour, left_contour)
-        if key_value < min_key_value:
+        if min_key_value is None or key_value < min_key_value:
             min_key_contours = right_contour, left_contour
             min_key_value = key_value
     if min_key_contours is None:
@@ -68,12 +98,13 @@ def minimizing_split(contour: Contour,
     return min_key_contours
 
 
-def to_partitions(contour: Contour,
+def to_partitions(contour: Contour,  # noqa: PLR0915
                   area_requirement: Fraction) -> Iterator[Partition]:
     """
-    Returns an iterator over `Partition` objects, containing
-    information about domain segments, their countersegments,
-    "right" and "left" parts' vertices,
+    Returns an iterator over `Partition` objects of the given contour.
+
+    The partitions contain information about domain segments,
+    their countersegments, "right" and "left" parts' vertices,
     where "right" vertices are all the original vertices
     located between the domain and countersegment when iterating
     in counterclockwise order, and left vertices are
@@ -102,7 +133,7 @@ def to_partitions(contour: Contour,
         elif accumulated_area == area_requirement:
             right_vertices.append(head.end)  # remove
             left_vertices.popleft()
-            head = next(heads)
+            head = next(heads)  # noqa: PLW2901
             countervertex = head.start
             is_head_based_on_original_vertex = True
         else:
@@ -158,10 +189,12 @@ def to_partitions(contour: Contour,
             tail = Segment(domain_end, tail.end)
             head = next(heads)
         countersegment = Segment(countervertex, image_end)
-        resulting_right_vertices = (list(right_vertices)
-                                    if len(right_vertices) > 2 else [])
-        resulting_left_vertices = (list(left_vertices)
-                                   if len(left_vertices) > 2 else [])
+        right_vertices_list = list(right_vertices)
+        resulting_right_vertices = (right_vertices_list
+                                    if right_vertices_list[1:-1] else [])
+        left_vertices_list = list(left_vertices)
+        resulting_left_vertices = (left_vertices_list
+                                   if left_vertices_list[1:-1] else [])
         yield Partition(domain=domain,
                         countersegment=countersegment,
                         right_vertices=resulting_right_vertices,
@@ -186,10 +219,12 @@ def to_splitter(domain: Segment,
                 countersegment: Segment,
                 area_requirement: Fraction) -> Segment:
     """
+    Finds "splitter" segment cutting off the given area requirement.
+
     For the given "domain" and its corresponding "countersegment",
     finds another "splitter" segment connecting these two
     so that the area on the right would be
-    equal to the given area requirement
+    equal to the given area requirement.
     """
     if (domain.start.x == domain.end.x
             and countersegment.end.x == countersegment.start.x):
@@ -231,16 +266,17 @@ def to_splitter(domain: Segment,
         image_slope=countersegment_slope)
 
 
-def to_right_left_contours(domain: Segment,
+def to_right_left_contours(domain: Segment,  # noqa: PLR0912, C901
                            countersegment: Segment,
                            splitter: Segment,
-                           right_vertices: List[Point],
-                           left_vertices: List[Point]) -> Tuple[Contour,
+                           right_vertices: list[Point],
+                           left_vertices: list[Point]) -> tuple[Contour,
                                                                 Contour]:
     """
-    Constructs two contours from splitter
-    and vertices delimiting right and left parts
-    based on the splitter's endpoints location
+    Constructs right and left contours separated by the splitter.
+
+    The contours are built from the splitter and vertices delimiting
+    right and left parts based on the splitter's endpoints location.
     """
     if not right_vertices:
         if splitter.start == domain.start:
@@ -254,11 +290,7 @@ def to_right_left_contours(domain: Segment,
                                      countersegment.start, splitter.end])
     else:
         if domain.end in Segment(splitter.start, right_vertices[1]):
-            try:
-                right_vertices = right_vertices[1:]
-            except TypeError:
-                print("right_vertices == ", right_vertices)
-                raise TypeError
+            right_vertices = right_vertices[1:]
         if countersegment.start in Segment(right_vertices[-2], splitter.end):
             right_vertices = right_vertices[:-1]
         right_contour = Contour([splitter.start,
@@ -287,10 +319,12 @@ def vertical_segments_splitter(area_requirement: Fraction,
                                domain: Segment,
                                countersegment: Segment) -> Segment:
     """
+    Finds splitter for vertical domain and countersegment.
+
     Finds segment connecting two vertical "domain"
     and "countersegment" segments
     so that the area on the right would be
-    equal to the area requirement
+    equal to the area requirement.
     """
     tail_y = ((2 * area_requirement
                + countersegment.start.x * countersegment.start.y
@@ -311,10 +345,12 @@ def vertical_domain_splitter(area_requirement: Fraction,
                              domain: Segment,
                              countersegment: Segment) -> Segment:
     """
+    Finds splitter for vertical domain and inclined countersegment.
+
     Finds segment connecting a vertical "domain"
     and an inclined "countersegment" segments
     so that the area on the right would be
-    equal to the area requirement
+    equal to the area requirement.
     """
     slope, intercept = slope_intercept(countersegment.start,
                                        countersegment.end)
@@ -346,10 +382,12 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
                                      domain: Segment,
                                      countersegment: Segment) -> Segment:
     """
+    Finds splitter for inclined domain and vertical countersegment.
+
     Finds segment connecting an inclined "domain"
     and a vertical "countersegment" segments
     so that the area on the right would be
-    equal to the area requirement
+    equal to the area requirement.
     """
     slope, intercept = slope_intercept(domain.start, domain.end)
     const = (2 * area_requirement
@@ -376,7 +414,8 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
     return Segment(tail_point, head_point)
 
 
-def parallel_inclined_segments_splitter(area_requirement: Fraction,
+def parallel_inclined_segments_splitter(*,  # noqa: PLR0913
+                                        area_requirement: Fraction,
                                         intercept_diff: Fraction,
                                         domain: Segment,
                                         domain_intercept: Fraction,
@@ -384,9 +423,11 @@ def parallel_inclined_segments_splitter(area_requirement: Fraction,
                                         countersegment_intercept: Fraction,
                                         slope: Fraction) -> Segment:
     """
+    Finds splitter for parallel inclined domain and countersegment.
+
     Finds segment connecting parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
-    would be equal to the area requirement
+    would be equal to the area requirement.
     """
     tail_x = (area_requirement / intercept_diff
               + (domain.end.x + countersegment.start.x) / 2
@@ -404,7 +445,8 @@ def parallel_inclined_segments_splitter(area_requirement: Fraction,
     return Segment(tail_point, head_point)
 
 
-def general_case_splitter(area_requirement: Fraction,
+def general_case_splitter(*,  # noqa: PLR0913
+                          area_requirement: Fraction,
                           intercept_diff: Fraction,
                           domain: Segment,
                           domain_intercept: Fraction,
@@ -413,9 +455,11 @@ def general_case_splitter(area_requirement: Fraction,
                           countersegment_intercept: Fraction,
                           image_slope: Fraction) -> Segment:
     """
+    Finds splitter for non-parallel inclined domain and countersegment.
+
     Finds segment connecting non-parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
-    would be equal to the area requirement
+    would be equal to the area requirement.
     """
     slope_diff = domain_slope - image_slope
     const = (2 * area_requirement
@@ -426,9 +470,9 @@ def general_case_splitter(area_requirement: Fraction,
                + countersegment_intercept
             else -1)
     tail_x = (sign
-              * robust_sqrt((robust_sqrt((1 + image_slope ** 2)
-                                         / (1 + domain_slope ** 2))
-                             * abs(intercept_diff ** 2 + slope_diff * const)))
+              * robust_sqrt(robust_sqrt((1 + image_slope ** 2)
+                                        / (1 + domain_slope ** 2))
+                            * abs(intercept_diff ** 2 + slope_diff * const))
               - intercept_diff) / slope_diff
     if is_before_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.start, countersegment.start)
@@ -447,8 +491,10 @@ def is_before_domain(value: Fraction,
                      start: Fraction,
                      end: Fraction) -> bool:
     """
+    Checks if the splitter's tail lies before the domain.
+
     Checks if X or Y coordinate of the segment's tail
-    was found before the starting vertex of the "domain"
+    was found before the starting vertex of the "domain".
     """
     return value <= start < end or value >= start > end
 
@@ -457,13 +503,24 @@ def is_after_domain(value: Fraction,
                     start: Fraction,
                     end: Fraction) -> bool:
     """
+    Checks if the splitter's tail lies after the domain.
+
     Checks if X or Y coordinate of the segment's tail
-    was found after the second vertex of the "domain"
+    was found after the second vertex of the "domain".
     """
     return value >= end > start or value <= end < start
 
 
 def robust_sqrt(fraction: Fraction) -> Fraction:
+    """
+    Returns square root of the given fraction.
+
+    The square root is computed with `Decimal` precision
+    and converted back to `Fraction`.
+
+    :param fraction: non-negative number to take square root of
+    :return: square root of the fraction.
+    """
     return Fraction((fraction.numerator
                      / Decimal(fraction.denominator)).sqrt())
 
@@ -474,6 +531,7 @@ def inverse_shoelace(area: Fraction,
                      base_end: Point) -> Point:
     """
     Finds point in triangle based on inverse shoelace algorithm.
+
     Coordinates of the points must be of `Fraction` type.
     """
     orientation = Contour([endpoint, base_start, base_end]).orientation
@@ -495,7 +553,16 @@ def inverse_shoelace(area: Fraction,
     return Point(x, y)
 
 
-def slope_intercept(start: Point, end: Point) -> Tuple[Fraction, Fraction]:
+def slope_intercept(start: Point, end: Point) -> tuple[Fraction, Fraction]:
+    """
+    Returns slope and intercept of the line passing through two points.
+
+    The points must have different X coordinates.
+
+    :param start: first point on the line
+    :param end: second point on the line
+    :return: slope and intercept of the line.
+    """
     slope = (end.y - start.y) / (end.x - start.x)
     intercept = end.y - slope * end.x
     return slope, intercept

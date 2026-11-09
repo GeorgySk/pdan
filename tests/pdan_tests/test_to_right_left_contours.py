@@ -1,12 +1,16 @@
 from fractions import Fraction
 
-from gon.base import Contour
-from gon.base import Polygon
+from gon.base import (
+    Contour,
+    Polygon,
+)
 from hypothesis import given
 
-from pdan.pdan import (to_right_left_contours,
-                       to_partitions,
-                       to_splitter)
+from pdan.pdan import (
+    to_partitions,
+    to_right_left_contours,
+    to_splitter,
+)
 from tests.strategies.base import open_interval_unit_fractions
 from tests.strategies.geometry import convex_contours
 
@@ -47,6 +51,7 @@ def test_parts_inclusion(contour: Contour,
         splitter=splitter,
         right_vertices=partition.right_vertices,
         left_vertices=partition.left_vertices)
-    assert ((splitter < right_contour) and (splitter < left_contour)
-            and (Polygon(right_contour) <= polygon)
-            and (Polygon(left_contour) <= polygon))
+    assert splitter < right_contour
+    assert splitter < left_contour
+    assert Polygon(right_contour) <= polygon
+    assert Polygon(left_contour) <= polygon

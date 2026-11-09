@@ -1,19 +1,25 @@
-ARG PYTHON_IMAGE
 ARG PYTHON_IMAGE_VERSION
+ARG IMAGE_TYPE
 
-FROM ${PYTHON_IMAGE}:${PYTHON_IMAGE_VERSION}
-
+FROM python:${PYTHON_IMAGE_VERSION} AS base
 ARG POETRY_VERSION
-
-RUN pip install --upgrade pip setuptools
-RUN pip install "poetry==${POETRY_VERSION}"
 
 WORKDIR /opt/pdan
 
-COPY pyproject.toml .
-RUN poetry config virtualenvs.create false 
-RUN poetry install
+RUN pip install "poetry==${POETRY_VERSION}" && \
+    poetry config virtualenvs.create false
 
 COPY README.md .
-COPY pdan/ pdan/
+COPY docs/ docs/
 COPY tests/ tests/
+COPY pdan/ pdan/
+COPY pyproject.toml .
+COPY LICENSE .
+
+FROM base AS prod
+RUN poetry install
+
+FROM base AS dev
+RUN poetry install --with dev
+
+FROM ${IMAGE_TYPE}
