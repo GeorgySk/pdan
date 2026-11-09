@@ -20,6 +20,24 @@ from gon.hints import Maybe
 
 @dataclass
 class Partition:
+    """
+    Describes a candidate place to split the polygon.
+
+    Holds a "domain" segment and its "countersegment" on the polygon
+    boundary, the vertices of the polygon lying on each side between
+    them, and the area that a splitter segment connecting the two
+    still has to cut off.
+
+    :ivar domain: segment of the boundary where a splitter starts
+    :ivar countersegment: segment of the boundary where a splitter ends
+    :ivar right_vertices: vertices going counterclockwise from `domain`
+    to `countersegment`; empty if there are none between them
+    :ivar left_vertices: vertices going counterclockwise from
+    `countersegment` to `domain`; empty if there are none between them
+    :ivar area_difference: area to cut off from the quadrilateral
+    between `domain` and `countersegment`
+    """
+
     domain: Segment
     countersegment: Segment
     right_vertices: list[Point]
