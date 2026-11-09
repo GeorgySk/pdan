@@ -113,4 +113,5 @@ ignore = [
     "D100",  # Sphinx's `conf.py` is a config file, not a documented module
     "DTZ011",  # local date is fine for the copyright year
     "A001",  # Sphinx requires the config variable to be named `copyright`
+    "INP001",  # Sphinx executes `conf.py` by path, it's never imported
 ]
