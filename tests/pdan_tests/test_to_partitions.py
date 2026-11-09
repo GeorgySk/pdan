@@ -1,4 +1,5 @@
 from fractions import Fraction
+from itertools import pairwise
 
 from gon.base import (
     Contour,
@@ -15,7 +16,6 @@ from hypothesis import (
 )
 
 from pdan.pdan import to_partitions
-from tests.pdan_tests.utils import pairwise
 from tests.strategies.base import open_interval_unit_fractions
 from tests.strategies.geometry import convex_contours
 

@@ -1,14 +1,6 @@
 from fractions import Fraction
-from itertools import tee
 
 from gon.base import Point
-
-
-def pairwise(iterable):
-    """s -> (s0,s1), (s1,s2), (s2, s3), ..."""
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
 
 
 def find_vertical_countersegment_end(*,
