@@ -88,6 +88,13 @@ ignore = [
     # purely a matter of opinion with no real advantage either way. We put
     # the opening quotes on their own line, so we ignore D212 and keep D213.
     "D212",
+    # EM101 and EM102 want exception messages assigned to a variable before
+    # `raise`, only so that a traceback doesn't show the message twice (once
+    # in the `raise` source line and once after the exception name). That is
+    # a purely cosmetic concern: the extra line makes the code noisier, and
+    # having the message in the `raise` line makes it easy to find by grep.
+    "EM101",
+    "EM102",
 ]
 
 [tool.ruff.lint.per-file-ignores]
