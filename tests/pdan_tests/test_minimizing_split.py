@@ -6,11 +6,7 @@ from gon.base import (
     Contour,
     Polygon,
 )
-from hypothesis import (
-    example,
-    given,
-    settings,
-)
+from hypothesis import given
 
 from pdan.pdan import minimizing_split
 from tests.strategies.base import (

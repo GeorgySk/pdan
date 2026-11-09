@@ -3,10 +3,7 @@ from gon.base import (
     Polygon,
     Segment,
 )
-from hypothesis import (
-    example,
-    given,
-)
+from hypothesis import given
 
 from pdan.pdan import to_splitter
 from tests.strategies.geometry import countersegments_pairs

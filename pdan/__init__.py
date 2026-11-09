@@ -9,5 +9,14 @@ from .pdan import (
     Contour,
     Point,
     Polygon,
+    Segment,
     minimizing_split,
 )
+
+__all__ = [
+    "Contour",
+    "Point",
+    "Polygon",
+    "Segment",
+    "minimizing_split",
+]
