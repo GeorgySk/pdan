@@ -1,3 +1,11 @@
+"""
+Splits convex polygons into two parts with a given area.
+
+Implements the algorithm of Skorobogatov et al., 2021, which finds
+among all splits of a convex polygon that cut off a part with
+the given area the one that minimizes a user-supplied `key` function.
+"""
+
 from collections import deque
 from collections.abc import (
     Callable,
