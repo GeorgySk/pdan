@@ -82,6 +82,12 @@ ignore = [
     # style has any real advantage over the other. We write descriptive
     # summaries, which D401 would flag.
     "D401",
+    # D212 and D213 are mutually exclusive: the former wants a multi-line
+    # docstring summary on the same line as the opening quotes, the latter
+    # on the line after them. PEP 257 allows either, and the choice is
+    # purely a matter of opinion with no real advantage either way. We put
+    # the opening quotes on their own line, so we ignore D212 and keep D213.
+    "D212",
 ]
 
 [tool.ruff.lint.per-file-ignores]
