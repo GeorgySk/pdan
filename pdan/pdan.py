@@ -390,7 +390,8 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
     return Segment(tail_point, head_point)
 
 
-def parallel_inclined_segments_splitter(area_requirement: Fraction,
+def parallel_inclined_segments_splitter(*,
+                                        area_requirement: Fraction,
                                         intercept_diff: Fraction,
                                         domain: Segment,
                                         domain_intercept: Fraction,
@@ -420,7 +421,8 @@ def parallel_inclined_segments_splitter(area_requirement: Fraction,
     return Segment(tail_point, head_point)
 
 
-def general_case_splitter(area_requirement: Fraction,
+def general_case_splitter(*,
+                          area_requirement: Fraction,
                           intercept_diff: Fraction,
                           domain: Segment,
                           domain_intercept: Fraction,
