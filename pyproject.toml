@@ -49,6 +49,12 @@ addopts = "--verbose -s --hypothesis-profile=default"
 [tool.mypy]
 strict = true
 
+# `gon` and `hypothesis_geometry` ship neither inline types (`py.typed`)
+# nor stub packages, so mypy cannot analyze them.
+[[tool.mypy.overrides]]
+module = ["gon.*", "hypothesis_geometry.*"]
+ignore_missing_imports = true
+
 [tool.ruff]
 line-length = 79
 
