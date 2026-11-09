@@ -109,3 +109,6 @@ ignore = [
     "S101",  # it's expected to have `assert` in tests
     "E731",  # lambdas are handy for defining simple test keys
 ]
+"docs/**" = [
+    "D100",  # Sphinx's `conf.py` is a config file, not a documented module
+]
