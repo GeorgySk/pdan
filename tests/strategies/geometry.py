@@ -1,7 +1,5 @@
-from collections.abc import Callable
 from fractions import Fraction
 from functools import partial
-from typing import TypeVar
 
 from gon.base import (
     Contour,
@@ -11,7 +9,6 @@ from gon.base import (
 )
 from hypothesis import strategies as st
 from hypothesis_geometry import planar
-from hypothesis_geometry.hints import Strategy
 
 from pdan.pdan import slope_intercept
 from tests.config import (
@@ -20,8 +17,6 @@ from tests.config import (
 )
 from tests.pdan_tests.utils import find_vertical_countersegment_end
 from tests.strategies.base import fractions
-
-T = TypeVar("T")
 
 TRIANGULAR_CONTOUR_SIZE = 3
 QUADRILATERAL_CONTOUR_SIZE = 4
@@ -41,8 +36,7 @@ polygons = planar.polygons(fractions,
 
 
 @st.composite
-def to_countersegments_pairs(draw: Callable[[Strategy[T]], T]
-                             ) -> tuple[Segment, Segment]:
+def to_countersegments_pairs(draw: st.DrawFn) -> tuple[Segment, Segment]:
     quadrilateral_contour = draw(quadrilateral_contours)
     domain = Segment(quadrilateral_contour.vertices[0],
                      quadrilateral_contour.vertices[1])
