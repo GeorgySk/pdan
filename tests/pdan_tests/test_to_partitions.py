@@ -76,12 +76,12 @@ def test_vertices_connection_with_segments(contour: Contour,
     partitions = to_partitions(contour, area_requirement)
     for partition in partitions:
         if partition.right_vertices:
-            assert (partition.domain.end == partition.right_vertices[0]
-                    and partition.right_vertices[-1]
+            assert partition.domain.end == partition.right_vertices[0]
+            assert (partition.right_vertices[-1]
                     == partition.countersegment.start)
         if partition.left_vertices:
-            assert (partition.countersegment.end == partition.left_vertices[0]
-                    and partition.left_vertices[-1] == partition.domain.start)
+            assert partition.countersegment.end == partition.left_vertices[0]
+            assert partition.left_vertices[-1] == partition.domain.start
 
 
 @given(contour=convex_contours,

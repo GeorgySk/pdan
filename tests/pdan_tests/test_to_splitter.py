@@ -21,7 +21,8 @@ def test_endpoints_location(countersegments_pair: tuple[Segment, Segment]
     splitter = to_splitter(domain=domain,
                            countersegment=countersegment,
                            area_requirement=area_requirement)
-    assert splitter.start in domain and splitter.end in countersegment
+    assert splitter.start in domain
+    assert splitter.end in countersegment
 
 
 @given(countersegments_pairs=countersegments_pairs)

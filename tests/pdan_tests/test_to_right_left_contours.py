@@ -51,6 +51,7 @@ def test_parts_inclusion(contour: Contour,
         splitter=splitter,
         right_vertices=partition.right_vertices,
         left_vertices=partition.left_vertices)
-    assert ((splitter < right_contour) and (splitter < left_contour)
-            and (Polygon(right_contour) <= polygon)
-            and (Polygon(left_contour) <= polygon))
+    assert splitter < right_contour
+    assert splitter < left_contour
+    assert Polygon(right_contour) <= polygon
+    assert Polygon(left_contour) <= polygon
