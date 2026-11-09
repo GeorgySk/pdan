@@ -444,9 +444,9 @@ def general_case_splitter(area_requirement: Fraction,
                + countersegment_intercept
             else -1)
     tail_x = (sign
-              * robust_sqrt((robust_sqrt((1 + image_slope ** 2)
-                                         / (1 + domain_slope ** 2))
-                             * abs(intercept_diff ** 2 + slope_diff * const)))
+              * robust_sqrt(robust_sqrt((1 + image_slope ** 2)
+                                        / (1 + domain_slope ** 2))
+                            * abs(intercept_diff ** 2 + slope_diff * const))
               - intercept_diff) / slope_diff
     if is_before_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.start, countersegment.start)
