@@ -107,7 +107,7 @@ def to_partitions(contour: Contour,
         elif accumulated_area == area_requirement:
             right_vertices.append(head.end)  # remove
             left_vertices.popleft()
-            head = next(heads)
+            head = next(heads)  # noqa: PLW2901
             countervertex = head.start
             is_head_based_on_original_vertex = True
         else:
