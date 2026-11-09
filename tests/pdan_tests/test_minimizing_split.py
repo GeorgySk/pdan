@@ -27,7 +27,7 @@ def test_area(contour: Contour,
               unit_fraction: Real,
               key: Callable[[Contour, Contour], Fraction]) -> None:
     area_requirement = unit_fraction * Polygon(contour).area
-    key = lambda x, y: x.length
+    key = lambda x, _: x.length
     part, rest = minimizing_split(contour,
                                   area_requirement=area_requirement,
                                   key=key)
