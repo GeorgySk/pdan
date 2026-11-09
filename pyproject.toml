@@ -88,6 +88,11 @@ ignore = [
     # purely a matter of opinion with no real advantage either way. We put
     # the opening quotes on their own line, so we ignore D212 and keep D213.
     "D212",
+    # D203 and D211 are mutually exclusive: the former wants a blank line
+    # between a class statement and its docstring, the latter forbids one.
+    # `ruff format` removes such blank lines, and current PEP 257 doesn't
+    # ask for them, so we ignore D203 and keep D211.
+    "D203",
     # EM101 and EM102 want exception messages assigned to a variable before
     # `raise`, only so that a traceback doesn't show the message twice (once
     # in the `raise` source line and once after the exception name). That is
