@@ -238,7 +238,7 @@ def to_splitter(domain: Segment,
         image_slope=countersegment_slope)
 
 
-def to_right_left_contours(domain: Segment,
+def to_right_left_contours(domain: Segment,  # noqa: PLR0912
                            countersegment: Segment,
                            splitter: Segment,
                            right_vertices: list[Point],
