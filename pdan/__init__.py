@@ -1,5 +1,4 @@
-"""Implementation of the algorithm by Skorobogatov et al., 2021, for
-decomposition of convex polygons.."""
+"""Convex polygon decomposition algorithm by Skorobogatov et al., 2021."""
 
 __author__ = "Georgy Skorobogatov"
 __email__ = "skorobogatovgeorgy+github@gmail.com"

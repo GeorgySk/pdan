@@ -33,10 +33,13 @@ def minimizing_split(contour: Contour,
                      key: Callable[[Contour, Contour], Fraction]
                      ) -> tuple[Contour, Maybe[Contour]]:
     """
-    Splits convex polygon defined by the input contour,
-    finds the part with the given area requirement that yields
-    the minimum possible value when applied to `key` function,
-    and returns it along with the remaining part as contours.
+    Splits convex polygon into two parts minimizing `key` function.
+
+    Finds the part of the polygon defined by the input contour
+    with the given area requirement that yields the minimum possible
+    value when applied to `key` function, and returns it along with
+    the remaining part as contours.
+
     :param contour: defines a convex polygon
     :param area_requirement: area of a part to return
     :param key: function to be applied to a pair of contours
@@ -72,9 +75,10 @@ def minimizing_split(contour: Contour,
 def to_partitions(contour: Contour,
                   area_requirement: Fraction) -> Iterator[Partition]:
     """
-    Returns an iterator over `Partition` objects, containing
-    information about domain segments, their countersegments,
-    "right" and "left" parts' vertices,
+    Returns an iterator over `Partition` objects of the given contour.
+
+    The partitions contain information about domain segments,
+    their countersegments, "right" and "left" parts' vertices,
     where "right" vertices are all the original vertices
     located between the domain and countersegment when iterating
     in counterclockwise order, and left vertices are
@@ -187,6 +191,8 @@ def to_splitter(domain: Segment,
                 countersegment: Segment,
                 area_requirement: Fraction) -> Segment:
     """
+    Finds "splitter" segment cutting off the given area requirement.
+
     For the given "domain" and its corresponding "countersegment",
     finds another "splitter" segment connecting these two
     so that the area on the right would be
@@ -239,9 +245,10 @@ def to_right_left_contours(domain: Segment,
                            left_vertices: list[Point]) -> tuple[Contour,
                                                                 Contour]:
     """
-    Constructs two contours from splitter
-    and vertices delimiting right and left parts
-    based on the splitter's endpoints location.
+    Constructs right and left contours separated by the splitter.
+
+    The contours are built from the splitter and vertices delimiting
+    right and left parts based on the splitter's endpoints location.
     """
     if not right_vertices:
         if splitter.start == domain.start:
@@ -288,6 +295,8 @@ def vertical_segments_splitter(area_requirement: Fraction,
                                domain: Segment,
                                countersegment: Segment) -> Segment:
     """
+    Finds splitter for vertical domain and countersegment.
+
     Finds segment connecting two vertical "domain"
     and "countersegment" segments
     so that the area on the right would be
@@ -312,6 +321,8 @@ def vertical_domain_splitter(area_requirement: Fraction,
                              domain: Segment,
                              countersegment: Segment) -> Segment:
     """
+    Finds splitter for vertical domain and inclined countersegment.
+
     Finds segment connecting a vertical "domain"
     and an inclined "countersegment" segments
     so that the area on the right would be
@@ -347,6 +358,8 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
                                      domain: Segment,
                                      countersegment: Segment) -> Segment:
     """
+    Finds splitter for inclined domain and vertical countersegment.
+
     Finds segment connecting an inclined "domain"
     and a vertical "countersegment" segments
     so that the area on the right would be
@@ -385,6 +398,8 @@ def parallel_inclined_segments_splitter(area_requirement: Fraction,
                                         countersegment_intercept: Fraction,
                                         slope: Fraction) -> Segment:
     """
+    Finds splitter for parallel inclined domain and countersegment.
+
     Finds segment connecting parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
     would be equal to the area requirement.
@@ -414,6 +429,8 @@ def general_case_splitter(area_requirement: Fraction,
                           countersegment_intercept: Fraction,
                           image_slope: Fraction) -> Segment:
     """
+    Finds splitter for non-parallel inclined domain and countersegment.
+
     Finds segment connecting non-parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
     would be equal to the area requirement.
@@ -448,6 +465,8 @@ def is_before_domain(value: Fraction,
                      start: Fraction,
                      end: Fraction) -> bool:
     """
+    Checks if the splitter's tail lies before the domain.
+
     Checks if X or Y coordinate of the segment's tail
     was found before the starting vertex of the "domain".
     """
@@ -458,6 +477,8 @@ def is_after_domain(value: Fraction,
                     start: Fraction,
                     end: Fraction) -> bool:
     """
+    Checks if the splitter's tail lies after the domain.
+
     Checks if X or Y coordinate of the segment's tail
     was found after the second vertex of the "domain".
     """
@@ -466,8 +487,11 @@ def is_after_domain(value: Fraction,
 
 def robust_sqrt(fraction: Fraction) -> Fraction:
     """
-    Returns square root of the given fraction computed with `Decimal`
-    precision and converted back to `Fraction`.
+    Returns square root of the given fraction.
+
+    The square root is computed with `Decimal` precision
+    and converted back to `Fraction`.
+
     :param fraction: non-negative number to take square root of
     :return: square root of the fraction.
     """
@@ -481,6 +505,7 @@ def inverse_shoelace(area: Fraction,
                      base_end: Point) -> Point:
     """
     Finds point in triangle based on inverse shoelace algorithm.
+
     Coordinates of the points must be of `Fraction` type.
     """
     orientation = Contour([endpoint, base_start, base_end]).orientation
@@ -504,8 +529,10 @@ def inverse_shoelace(area: Fraction,
 
 def slope_intercept(start: Point, end: Point) -> tuple[Fraction, Fraction]:
     """
-    Returns slope and intercept of the line passing through two points
-    with different X coordinates.
+    Returns slope and intercept of the line passing through two points.
+
+    The points must have different X coordinates.
+
     :param start: first point on the line
     :param end: second point on the line
     :return: slope and intercept of the line.
