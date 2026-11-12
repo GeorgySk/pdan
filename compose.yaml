@@ -6,7 +6,7 @@ services:
         - PYTHON_IMAGE_VERSION=${PYTHON_IMAGE_VERSION}
         - POETRY_VERSION=${POETRY_VERSION}
         - IMAGE_TYPE=${IMAGE_TYPE}
-    image: georgysk/pdan:0.2.0
+    image: georgysk/pdan:0.2.1-alpha
     volumes:
       - .:/opt/pdan
     stdin_open: true

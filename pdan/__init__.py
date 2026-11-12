@@ -2,7 +2,7 @@
 
 __author__ = "Georgy Skorobogatov"
 __email__ = "skorobogatovgeorgy+github@gmail.com"
-__version__ = "0.2.0"
+__version__ = "0.2.1-alpha"
 
 from gon.base import (
     Contour,

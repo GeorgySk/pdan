@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "pdan"
-version = "0.2.0"
+version = "0.2.1-alpha"
 description = "Implementation of the algorithm by Skorobogatov et al., 2021, for decomposition of convex polygons."
 authors = [
     { name = "Georgy Skorobogatov", email = "skorobogatovgeorgy+github@gmail.com" },
