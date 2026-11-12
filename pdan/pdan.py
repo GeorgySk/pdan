@@ -54,7 +54,7 @@ class Partition:
 
 
 def minimizing_split(contour: Contour,
-                     area_requirement: Fraction,
+                     area_requirement: Fraction | float,
                      *,
                      key: Callable[[Contour, Contour], Fraction]
                      ) -> tuple[Contour, Maybe[Contour]]:
@@ -66,13 +66,17 @@ def minimizing_split(contour: Contour,
     value when applied to `key` function, and returns it along with
     the remaining part as contours.
 
-    :param contour: defines a convex polygon
-    :param area_requirement: area of a part to return
+    :param contour: defines a convex polygon; integer and float
+        coordinates are converted to fractions
+    :param area_requirement: area of a part to return; converted
+        to a fraction if given as an integer or a float
     :param key: function to be applied to a pair of contours
     :return: two contours if the area requirement is not zero
         or equal to area of the polygon; one contour and empty geometry
         otherwise.
     """
+    contour = to_fraction_contour(contour)
+    area_requirement = Fraction(area_requirement)
     if area_requirement == Polygon(contour).area:
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
@@ -96,6 +100,20 @@ def minimizing_split(contour: Contour,
     if min_key_contours is None:
         raise ValueError("Couldn't find the contour with min perimeter")
     return min_key_contours
+
+
+def to_fraction_contour(contour: Contour) -> Contour:
+    """
+    Converts coordinates of contour vertices to fractions.
+
+    The algorithm relies on exact arithmetic, while integer or float
+    coordinates would make divisions return floats.
+
+    :param contour: contour with integer, float or fraction coordinates
+    :return: same contour with fraction coordinates
+    """
+    return Contour([Point(Fraction(vertex.x), Fraction(vertex.y))
+                    for vertex in contour.vertices])
 
 
 def to_partitions(contour: Contour,  # noqa: PLR0915

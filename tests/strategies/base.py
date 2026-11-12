@@ -32,6 +32,9 @@ unit_fractions = st.fractions(MIN_AREA_FRACTION,
                               MAX_AREA_FRACTION,
                               max_denominator=MAX_DENOMINATOR)
 open_interval_unit_fractions = unit_fractions.filter(is_in_open_unit_interval)
+integers = st.integers(MIN_COORDINATE, MAX_COORDINATE)
+floats = fractions.map(float)
+coordinates = fractions | integers | floats
 metrics = st.sampled_from([lambda x, _: x.length,
                            lambda x, y: x.length + y.length,
                            lambda x, y: x.length * y.length])
