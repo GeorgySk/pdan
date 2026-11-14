@@ -54,10 +54,12 @@ Usage
 -----
 
 ```python
+>>> from fractions import Fraction
 >>> from pdan import minimizing_split, Contour, Point, Polygon
 >>> contour = Contour([Point(0, 0), Point(1, 0), Point(1, 1), Point(0, 1)])
->>> part, other = minimizing_split(contour, 0.5, key=lambda x, y: x.length)
->>> Polygon(part).area == Polygon(other).area == 0.5
+>>> part, other = minimizing_split(contour, Fraction(1, 2),
+...                                key=lambda x, y: x.length)
+>>> Polygon(part).area == Polygon(other).area == Fraction(1, 2)
 True
 
 ```

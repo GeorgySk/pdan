@@ -16,12 +16,18 @@ from tests.config import (
     MAX_HOLES_SIZE,
 )
 from tests.pdan_tests.utils import find_vertical_countersegment_end
-from tests.strategies.base import fractions
+from tests.strategies.base import (
+    coordinates,
+    fractions,
+    open_interval_unit_fractions,
+)
 
 TRIANGULAR_CONTOUR_SIZE = 3
 QUADRILATERAL_CONTOUR_SIZE = 4
 
 convex_contours = planar.convex_contours(fractions, max_size=MAX_CONTOUR_SIZE)
+any_coordinates_convex_contours = planar.convex_contours(
+    coordinates, max_size=MAX_CONTOUR_SIZE)
 convex_polygons = st.builds(Polygon, convex_contours)
 triangle_contours = planar.convex_contours(
     fractions, max_size=TRIANGULAR_CONTOUR_SIZE)
@@ -33,6 +39,23 @@ polygons = planar.polygons(fractions,
                            max_size=MAX_CONTOUR_SIZE,
                            max_holes_size=MAX_HOLES_SIZE,
                            max_hole_size=MAX_CONTOUR_SIZE)
+
+
+@st.composite
+def to_convex_contours_with_area_requirements(
+        draw: st.DrawFn) -> tuple[Contour, Fraction | float]:
+    contour = draw(any_coordinates_convex_contours)
+    unit_fraction = draw(open_interval_unit_fractions)
+    area_requirement = unit_fraction * Polygon(contour).area
+    converters: list[type[Fraction | float]] = [Fraction, float]
+    if area_requirement.denominator == 1:
+        converters.append(int)
+    convert = draw(st.sampled_from(converters))
+    return contour, convert(area_requirement)
+
+
+convex_contours_with_area_requirements = (
+    to_convex_contours_with_area_requirements())
 
 
 @st.composite

@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from fractions import Fraction
-from numbers import Real
 
 from gon.base import (
     Contour,
@@ -9,20 +8,15 @@ from gon.base import (
 from hypothesis import given
 
 from pdan.pdan import minimizing_split
-from tests.strategies.base import (
-    metrics,
-    open_interval_unit_fractions,
-)
-from tests.strategies.geometry import convex_contours
+from tests.strategies.base import metrics
+from tests.strategies.geometry import convex_contours_with_area_requirements
 
 
-@given(contour=convex_contours,
-       unit_fraction=open_interval_unit_fractions,
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
        key=metrics)
-def test_area(contour: Contour,
-              unit_fraction: Real,
+def test_area(contour_with_area_requirement: tuple[Contour, Fraction | float],
               key: Callable[[Contour, Contour], Fraction]) -> None:
-    area_requirement = unit_fraction * Polygon(contour).area
+    contour, area_requirement = contour_with_area_requirement
     key = lambda x, _: x.length
     part, rest = minimizing_split(contour,
                                   area_requirement=area_requirement,
@@ -31,13 +25,11 @@ def test_area(contour: Contour,
     assert Polygon(part).area + Polygon(rest).area == Polygon(contour).area
 
 
-@given(contour=convex_contours,
-       unit_fraction=open_interval_unit_fractions,
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
        key=metrics)
-def test_union(contour: Contour,
-               unit_fraction: Real,
+def test_union(contour_with_area_requirement: tuple[Contour, Fraction | float],
                key: Callable[[Contour, Contour], Fraction]) -> None:
-    area_requirement = unit_fraction * Polygon(contour).area
+    contour, area_requirement = contour_with_area_requirement
     part, rest = minimizing_split(contour,
                                   area_requirement=area_requirement,
                                   key=key)
