@@ -17,6 +17,10 @@ def is_greater_than_zero(value: Fraction) -> bool:
     return value > 0
 
 
+def is_less_than_zero(value: Fraction) -> bool:
+    return value < 0
+
+
 def is_in_open_unit_interval(value: Fraction) -> bool:
     return 0 < value < 1
 
@@ -32,6 +36,10 @@ unit_fractions = st.fractions(MIN_AREA_FRACTION,
                               MAX_AREA_FRACTION,
                               max_denominator=MAX_DENOMINATOR)
 open_interval_unit_fractions = unit_fractions.filter(is_in_open_unit_interval)
+negative_fractions = st.fractions(-MAX_AREA_FRACTION,
+                                  0,
+                                  max_denominator=MAX_DENOMINATOR
+                                  ).filter(is_less_than_zero)
 integers = st.integers(MIN_COORDINATE, MAX_COORDINATE)
 floats = fractions.map(float)
 coordinates = fractions | integers | floats

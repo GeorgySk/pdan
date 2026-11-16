@@ -57,7 +57,7 @@ def minimizing_split(contour: Contour,
                      area_requirement: Fraction | float,
                      *,
                      key: Callable[[Contour, Contour], Fraction]
-                     ) -> tuple[Contour, Maybe[Contour]]:
+                     ) -> tuple[Maybe[Contour], Maybe[Contour]]:
     """
     Splits convex polygon into two parts minimizing `key` function.
 
@@ -71,13 +71,25 @@ def minimizing_split(contour: Contour,
     :param area_requirement: area of a part to return; converted
         to a fraction if given as an integer or a float
     :param key: function to be applied to a pair of contours
-    :return: two contours if the area requirement is not zero
-        or equal to area of the polygon; one contour and empty geometry
-        otherwise.
+    :return: two contours if the area requirement is between zero
+        and area of the polygon; empty geometry and the input contour
+        if it is zero; the input contour and empty geometry if it is
+        equal to area of the polygon.
+    :raises ValueError: if the area requirement is negative
+        or exceeds area of the polygon.
     """
     contour = to_fraction_contour(contour)
     area_requirement = Fraction(area_requirement)
-    if area_requirement == Polygon(contour).area:
+    area = Polygon(contour).area
+    if area_requirement < 0:
+        raise ValueError("Area requirement must not be negative, "
+                         f"but got {area_requirement}.")
+    if area_requirement > area:
+        raise ValueError(f"Area requirement {area_requirement} exceeds "
+                         f"area of the polygon {area}.")
+    if area_requirement == 0:
+        return EMPTY, contour
+    if area_requirement == area:
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
