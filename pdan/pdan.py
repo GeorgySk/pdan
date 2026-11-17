@@ -12,8 +12,8 @@ from collections.abc import (
     Iterator,
 )
 from dataclasses import dataclass
-from decimal import Decimal
 from fractions import Fraction
+from math import isqrt
 
 from gon.base import (
     EMPTY,
@@ -24,6 +24,9 @@ from gon.base import (
     Segment,
 )
 from gon.hints import Maybe
+
+ROOT_PRECISION_BITS = 96
+"""Relative precision of inexact roots, close to 28 decimal digits."""
 
 
 @dataclass
@@ -392,8 +395,8 @@ def vertical_domain_splitter(area_requirement: Fraction,
             (domain_image_intersection_y * domain.end.x + const) ** 2
             * (1 + slope ** 2))
     sign = 1 if domain_image_intersection_y < domain.end.y else -1
-    tail_intersection_diff_y = robust_sqrt(robust_sqrt(
-        fourth_power_tail_intersection_diff_y))
+    tail_intersection_diff_y = fourth_root(
+        fourth_power_tail_intersection_diff_y)
     tail_y = (Fraction(sign * tail_intersection_diff_y)
               + domain_image_intersection_y)
     if is_before_domain(tail_y, domain.start.y, domain.end.y):
@@ -429,8 +432,8 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
             (const - domain_image_intersection_y * countersegment.start.x) ** 2
             / (1 + slope ** 2))
     sign = 1 if domain.start.x > countersegment.end.x else -1
-    tail_intersection_diff_x = robust_sqrt(robust_sqrt(
-        fourth_power_tail_intersection_diff_x))
+    tail_intersection_diff_x = fourth_root(
+        fourth_power_tail_intersection_diff_x)
     tail_x = Fraction(countersegment.start.x + sign * tail_intersection_diff_x)
     if is_before_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.start, countersegment.start)
@@ -500,9 +503,9 @@ def general_case_splitter(*,  # noqa: PLR0913
                + countersegment_intercept
             else -1)
     tail_x = (sign
-              * robust_sqrt(robust_sqrt((1 + image_slope ** 2)
-                                        / (1 + domain_slope ** 2))
-                            * abs(intercept_diff ** 2 + slope_diff * const))
+              * fourth_root((1 + image_slope ** 2)
+                            / (1 + domain_slope ** 2)
+                            * (intercept_diff ** 2 + slope_diff * const) ** 2)
               - intercept_diff) / slope_diff
     if is_before_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.start, countersegment.start)
@@ -545,14 +548,78 @@ def robust_sqrt(fraction: Fraction) -> Fraction:
     """
     Returns square root of the given fraction.
 
-    The square root is computed with `Decimal` precision
-    and converted back to `Fraction`.
+    The result is exact if the numerator and the denominator
+    are perfect squares. Otherwise it is rounded down to a multiple
+    of a power of two so that it has at least `ROOT_PRECISION_BITS`
+    significant bits. The result does not depend on any global state.
 
     :param fraction: non-negative number to take square root of
     :return: square root of the fraction.
     """
-    return Fraction((fraction.numerator
-                     / Decimal(fraction.denominator)).sqrt())
+    return _integer_root(fraction, 2)
+
+
+def fourth_root(fraction: Fraction) -> Fraction:
+    """
+    Returns fourth root of the given fraction.
+
+    The result is exact if the numerator and the denominator
+    are perfect fourth powers. Otherwise it is rounded down once
+    (not once per square root) to a multiple of a power of two
+    so that it has at least `ROOT_PRECISION_BITS` significant bits.
+
+    :param fraction: non-negative number to take fourth root of
+    :return: fourth root of the fraction.
+    """
+    return _integer_root(fraction, 4)
+
+
+def _integer_root(fraction: Fraction,
+                  degree: int) -> Fraction:
+    """
+    Returns root of the given fraction of degree two or four.
+
+    Uses only integer arithmetic. For a non-negative integer `m`,
+    `isqrt(isqrt(m))` equals the floor of the fourth root of `m`,
+    so the fourth root is rounded down only once.
+
+    :param fraction: non-negative number to take root of
+    :param degree: degree of the root, either 2 or 4
+    :return: exact root if both the numerator and the denominator
+        are perfect powers of `degree`, the root rounded down
+        to a multiple of a power of two otherwise.
+    :raises ValueError: if the fraction is negative.
+    """
+    numerator, denominator = fraction.numerator, fraction.denominator
+    if numerator < 0:
+        raise ValueError(f"Cannot take root of negative number: {fraction}")
+    numerator_root = _floor_root(numerator, degree)
+    denominator_root = _floor_root(denominator, degree)
+    if (numerator_root ** degree == numerator
+            and denominator_root ** degree == denominator):
+        return Fraction(numerator_root, denominator_root)
+    shift = max(0, ROOT_PRECISION_BITS
+                - (numerator.bit_length() - denominator.bit_length())
+                // degree)
+    scaled = (numerator << degree * shift) // denominator
+    return Fraction(_floor_root(scaled, degree), 1 << shift)
+
+
+def _floor_root(value: int,
+                degree: int) -> int:
+    """
+    Returns root of a non-negative integer rounded down.
+
+    :param value: non-negative integer to take root of
+    :param degree: degree of the root, a power of two
+    :return: the largest integer whose power of `degree`
+        does not exceed `value`.
+    """
+    root = value
+    while degree > 1:
+        root = isqrt(root)
+        degree //= 2
+    return root
 
 
 def inverse_shoelace(area: Fraction,

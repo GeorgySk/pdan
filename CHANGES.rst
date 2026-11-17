@@ -8,6 +8,20 @@ and this project adheres to `Semantic Versioning <https://semver.org/>`_.
 Unreleased
 ----------
 
+Changed
+~~~~~~~
+
+- Square and fourth roots in splitters are now computed with ``math.isqrt``
+  instead of ``Decimal``. Coordinates of splitter endpoints may differ
+  slightly from 0.2.2; areas of the parts are still exact.
+
+Fixed
+~~~~~
+
+- ``minimizing_split`` no longer depends on the global ``decimal`` context,
+  so the same input always gives the same split.
+- Roots of perfect squares and perfect fourth powers are now exact.
+
 0.2.2 (2026-11-16)
 ------------------------------
 
