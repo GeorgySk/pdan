@@ -1,4 +1,8 @@
 from collections.abc import Callable
+from decimal import (
+    ROUND_FLOOR,
+    localcontext,
+)
 from fractions import Fraction
 
 import pytest
@@ -95,3 +99,19 @@ def test_excessive_requirement(contour: Contour,
         minimizing_split(contour,
                          area_requirement=area_requirement,
                          key=key)
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=metrics)
+def test_independent_of_decimal_context(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Callable[[Contour, Contour], Fraction]) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    expected = minimizing_split(contour,
+                                area_requirement=area_requirement,
+                                key=key)
+    with localcontext(prec=3, rounding=ROUND_FLOOR):
+        result = minimizing_split(contour,
+                                  area_requirement=area_requirement,
+                                  key=key)
+    assert result == expected
