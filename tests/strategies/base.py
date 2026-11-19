@@ -1,5 +1,6 @@
 from fractions import Fraction
 
+from gon.base import Contour
 from hypothesis import strategies as st
 
 from tests.config import (
@@ -46,6 +47,28 @@ coordinates = fractions | integers | floats
 metrics = st.sampled_from([lambda x, _: x.length,
                            lambda x, y: x.length + y.length,
                            lambda x, y: x.length * y.length])
+
+
+def squared_perimeter_sum(contour: Contour) -> Fraction:
+    return sum(((segment.start.x - segment.end.x) ** 2
+                + (segment.start.y - segment.end.y) ** 2
+                for segment in contour.segments),
+               start=Fraction(0))
+
+
+def float_key(right: Contour, _left: Contour) -> float:
+    return float(squared_perimeter_sum(right))
+
+
+def int_key(right: Contour, _left: Contour) -> int:
+    return len(right.vertices)
+
+
+def tuple_key(right: Contour, _left: Contour) -> tuple[int, float]:
+    return len(right.vertices), float(squared_perimeter_sum(right))
+
+
+non_fraction_metrics = st.sampled_from([float_key, int_key, tuple_key])
 
 
 def normalize(requirements: list[Fraction]) -> list[Fraction]:

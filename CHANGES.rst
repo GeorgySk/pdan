@@ -8,6 +8,13 @@ and this project adheres to `Semantic Versioning <https://semver.org/>`_.
 Unreleased
 ----------
 
+Changed
+~~~~~~~
+
+- ``key`` in ``minimizing_split`` may now return any values that support
+  comparison with ``<`` (e.g. ``float``, ``int`` or tuples), not only
+  ``Fraction``. This only affects type checking.
+
 0.2.3 (2026-11-18)
 ------------------------------
 

@@ -9,10 +9,8 @@ from gon.base import (
     Segment,
 )
 from hypothesis import (
-    Verbosity,
     example,
     given,
-    settings,
 )
 
 from pdan.pdan import to_partitions
@@ -106,7 +104,6 @@ def test_inclusion(contour: Contour,
 
 @given(contour=convex_contours,
        unit_fraction=open_interval_unit_fractions)
-@settings(verbosity=Verbosity.verbose)
 def test_area_diff_range(contour: Contour,
                          unit_fraction: Fraction) -> None:
     polygon = Polygon(contour)
