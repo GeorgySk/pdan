@@ -13,7 +13,10 @@ from gon.base import (
 )
 from hypothesis import given
 
-from pdan.pdan import minimizing_split
+from pdan.pdan import (
+    SupportsLessThan,
+    minimizing_split,
+)
 from tests.strategies.base import (
     metrics,
     negative_fractions,
@@ -25,11 +28,13 @@ from tests.strategies.geometry import (
     convex_contours_with_area_requirements,
 )
 
+Key = Callable[[Contour, Contour], SupportsLessThan]
+
 
 @given(contour_with_area_requirement=convex_contours_with_area_requirements,
        key=metrics)
 def test_area(contour_with_area_requirement: tuple[Contour, Fraction | float],
-              key: Callable[[Contour, Contour], Fraction]) -> None:
+              key: Key) -> None:
     contour, area_requirement = contour_with_area_requirement
     part, rest = minimizing_split(contour,
                                   area_requirement=area_requirement,
@@ -41,7 +46,7 @@ def test_area(contour_with_area_requirement: tuple[Contour, Fraction | float],
 @given(contour_with_area_requirement=convex_contours_with_area_requirements,
        key=metrics)
 def test_union(contour_with_area_requirement: tuple[Contour, Fraction | float],
-               key: Callable[[Contour, Contour], Fraction]) -> None:
+               key: Key) -> None:
     contour, area_requirement = contour_with_area_requirement
     part, rest = minimizing_split(contour,
                                   area_requirement=area_requirement,
@@ -54,7 +59,7 @@ def test_union(contour_with_area_requirement: tuple[Contour, Fraction | float],
 @given(contour=convex_contours,
        key=metrics)
 def test_zero_requirement(contour: Contour,
-                          key: Callable[[Contour, Contour], Fraction]) -> None:
+                          key: Key) -> None:
     part, rest = minimizing_split(contour,
                                   area_requirement=0,
                                   key=key)
@@ -65,7 +70,7 @@ def test_zero_requirement(contour: Contour,
 @given(contour=convex_contours,
        key=metrics)
 def test_full_requirement(contour: Contour,
-                          key: Callable[[Contour, Contour], Fraction]) -> None:
+                          key: Key) -> None:
     part, rest = minimizing_split(contour,
                                   area_requirement=Polygon(contour).area,
                                   key=key)
@@ -78,7 +83,7 @@ def test_full_requirement(contour: Contour,
        key=metrics)
 def test_negative_requirement(contour: Contour,
                               area_fraction: Fraction,
-                              key: Callable[[Contour, Contour], Fraction]
+                              key: Key
                               ) -> None:
     area_requirement = area_fraction * Polygon(contour).area
     with pytest.raises(ValueError, match="must not be negative"):
@@ -92,7 +97,7 @@ def test_negative_requirement(contour: Contour,
        key=metrics)
 def test_excessive_requirement(contour: Contour,
                                area_excess: Fraction,
-                               key: Callable[[Contour, Contour], Fraction]
+                               key: Key
                                ) -> None:
     area_requirement = Polygon(contour).area + area_excess
     with pytest.raises(ValueError, match="exceeds area"):
@@ -105,7 +110,7 @@ def test_excessive_requirement(contour: Contour,
        key=metrics)
 def test_independent_of_decimal_context(
         contour_with_area_requirement: tuple[Contour, Fraction | float],
-        key: Callable[[Contour, Contour], Fraction]) -> None:
+        key: Key) -> None:
     contour, area_requirement = contour_with_area_requirement
     expected = minimizing_split(contour,
                                 area_requirement=area_requirement,
@@ -121,7 +126,7 @@ def test_independent_of_decimal_context(
        key=non_fraction_metrics)
 def test_non_fraction_key(
         contour_with_area_requirement: tuple[Contour, Fraction | float],
-        key: Callable[[Contour, Contour], float | tuple[int, float]]
+        key: Key
 ) -> None:
     contour, area_requirement = contour_with_area_requirement
     part, rest = minimizing_split(contour,
