@@ -192,7 +192,7 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
         if accumulated_area < area_requirement:
             continue
         elif accumulated_area == area_requirement:
-            right_vertices.append(head.end)  # remove
+            right_vertices.append(head.end)
             left_vertices.popleft()
             head = next(heads)  # noqa: PLW2901
             countervertex = head.start
