@@ -17,6 +17,7 @@ from pdan.pdan import minimizing_split
 from tests.strategies.base import (
     metrics,
     negative_fractions,
+    non_fraction_metrics,
     positive_nonzero_fractions,
 )
 from tests.strategies.geometry import (
@@ -115,3 +116,17 @@ def test_independent_of_decimal_context(
                                   area_requirement=area_requirement,
                                   key=key)
     assert result == expected
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=non_fraction_metrics)
+def test_non_fraction_key(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Callable[[Contour, Contour], float | tuple[int, float]]
+) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    part, rest = minimizing_split(contour,
+                                  area_requirement=area_requirement,
+                                  key=key)
+    assert Polygon(part).area == area_requirement
+    assert Polygon(part).area + Polygon(rest).area == Polygon(contour).area

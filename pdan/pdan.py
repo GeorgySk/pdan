@@ -14,6 +14,11 @@ from collections.abc import (
 from dataclasses import dataclass
 from fractions import Fraction
 from math import isqrt
+from typing import (
+    Protocol,
+    Self,
+    TypeVar,
+)
 
 from gon.base import (
     EMPTY,
@@ -27,6 +32,28 @@ from gon.hints import Maybe
 
 ROOT_PRECISION_BITS = 96
 """Relative precision of inexact roots, close to 28 decimal digits."""
+
+
+class SupportsLessThan(Protocol):
+    """
+    Describes values that can be ordered with the `<` operator.
+
+    Covers `int`, `float`, `Fraction`, the values of `Contour.length`
+    and any other type whose instances compare with each other.
+    """
+
+    def __lt__(self, other: Self, /) -> bool:
+        """
+        Checks if the value is less than the other one.
+
+        :param other: value of the same type to compare with
+        :return: whether the value is less than `other`
+        """
+        ...
+
+
+KeyValue = TypeVar("KeyValue", bound=SupportsLessThan)
+"""Type of the values that `key` returns in `minimizing_split`."""
 
 
 @dataclass
@@ -59,7 +86,7 @@ class Partition:
 def minimizing_split(contour: Contour,
                      area_requirement: Fraction | float,
                      *,
-                     key: Callable[[Contour, Contour], Fraction]
+                     key: Callable[[Contour, Contour], KeyValue]
                      ) -> tuple[Maybe[Contour], Maybe[Contour]]:
     """
     Splits convex polygon into two parts minimizing `key` function.
@@ -73,7 +100,8 @@ def minimizing_split(contour: Contour,
         coordinates are converted to fractions
     :param area_requirement: area of a part to return; converted
         to a fraction if given as an integer or a float
-    :param key: function to be applied to a pair of contours
+    :param key: function to be applied to a pair of contours;
+        its values only need to support comparison with `<`
     :return: two contours if the area requirement is between zero
         and area of the polygon; empty geometry and the input contour
         if it is zero; the input contour and empty geometry if it is
@@ -96,7 +124,7 @@ def minimizing_split(contour: Contour,
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
-    min_key_value: Fraction | None = None
+    min_key_value: KeyValue | None = None
     min_key_contours = None
     for partition in partitions:
         splitter = to_splitter(domain=partition.domain,
