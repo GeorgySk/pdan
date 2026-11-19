@@ -141,7 +141,7 @@ def minimizing_split(contour: Contour,
             min_key_contours = right_contour, left_contour
             min_key_value = key_value
     if min_key_contours is None:
-        raise ValueError("Couldn't find the contour with min perimeter")
+        raise ValueError("Couldn't find any split of the polygon.")
     return min_key_contours
 
 
