@@ -31,7 +31,6 @@ from tests.strategies.geometry import (
 def test_area(contour_with_area_requirement: tuple[Contour, Fraction | float],
               key: Callable[[Contour, Contour], Fraction]) -> None:
     contour, area_requirement = contour_with_area_requirement
-    key = lambda x, _: x.length
     part, rest = minimizing_split(contour,
                                   area_requirement=area_requirement,
                                   key=key)
