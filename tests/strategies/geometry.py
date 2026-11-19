@@ -11,10 +11,7 @@ from hypothesis import strategies as st
 from hypothesis_geometry import planar
 
 from pdan.pdan import slope_intercept
-from tests.config import (
-    MAX_CONTOUR_SIZE,
-    MAX_HOLES_SIZE,
-)
+from tests.config import MAX_CONTOUR_SIZE
 from tests.pdan_tests.utils import find_vertical_countersegment_end
 from tests.strategies.base import (
     coordinates,
@@ -28,17 +25,12 @@ QUADRILATERAL_CONTOUR_SIZE = 4
 convex_contours = planar.convex_contours(fractions, max_size=MAX_CONTOUR_SIZE)
 any_coordinates_convex_contours = planar.convex_contours(
     coordinates, max_size=MAX_CONTOUR_SIZE)
-convex_polygons = st.builds(Polygon, convex_contours)
 triangle_contours = planar.convex_contours(
     fractions, max_size=TRIANGULAR_CONTOUR_SIZE)
 quadrilateral_contours = planar.convex_contours(
     fractions,
     min_size=QUADRILATERAL_CONTOUR_SIZE,
     max_size=QUADRILATERAL_CONTOUR_SIZE)
-polygons = planar.polygons(fractions,
-                           max_size=MAX_CONTOUR_SIZE,
-                           max_holes_size=MAX_HOLES_SIZE,
-                           max_hole_size=MAX_CONTOUR_SIZE)
 
 
 @st.composite
