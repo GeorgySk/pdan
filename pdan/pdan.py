@@ -112,20 +112,22 @@ def minimizing_split(contour: Contour,
     `2 ** -(2 * ROOT_PRECISION_BITS)` in its length, and the
     coordinates have denominators of about that many bits.
 
-    :param contour: defines a convex polygon; integer and float
-        coordinates are converted to fractions
+    :param contour: defines a convex polygon, in either orientation;
+        integer and float coordinates are converted to fractions
     :param area_requirement: area of a part to return; converted
         to a fraction if given as an integer or a float
     :param key: function to be applied to a pair of contours;
         its values only need to support comparison with `<`
     :return: two contours if the area requirement is between zero
-        and area of the polygon; empty geometry and a copy of the input
-        contour with fraction coordinates if it is zero; that copy and
-        empty geometry if it is equal to area of the polygon.
+        and area of the polygon; empty geometry and a counterclockwise
+        copy of the input contour with fraction coordinates if it is
+        zero; that copy and empty geometry if it is equal to area
+        of the polygon. All returned contours are counterclockwise.
     :raises ValueError: if the area requirement is negative
         or exceeds area of the polygon.
     """
-    contour = to_fraction_contour(contour)
+    # the sweep in `to_partitions` assumes counterclockwise order
+    contour = to_fraction_contour(contour).to_counterclockwise()
     area_requirement = Fraction(area_requirement)
     area = Polygon(contour).area
     if area_requirement < 0:

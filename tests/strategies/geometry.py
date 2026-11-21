@@ -37,6 +37,8 @@ quadrilateral_contours = planar.convex_contours(
 def to_convex_contours_with_area_requirements(
         draw: st.DrawFn) -> tuple[Contour, Fraction | float]:
     contour = draw(any_coordinates_convex_contours)
+    if draw(st.booleans()):
+        contour = contour.to_clockwise()
     unit_fraction = draw(open_interval_unit_fractions)
     area_requirement = unit_fraction * Polygon(contour).area
     converters: list[type[Fraction | float]] = [Fraction, float]

@@ -5,6 +5,7 @@ import pytest
 from gon.base import (
     EMPTY,
     Contour,
+    Orientation,
     Polygon,
 )
 from hypothesis import given
@@ -114,3 +115,34 @@ def test_non_fraction_key(
                                   key=key)
     assert Polygon(part).area == area_requirement
     assert Polygon(part).area + Polygon(rest).area == Polygon(contour).area
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=metrics)
+def test_orientation_independence(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Key
+) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    clockwise_result = minimizing_split(contour.to_clockwise(),
+                                        area_requirement=area_requirement,
+                                        key=key)
+    counterclockwise_result = minimizing_split(
+        contour.to_counterclockwise(),
+        area_requirement=area_requirement,
+        key=key)
+    assert clockwise_result == counterclockwise_result
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=metrics)
+def test_counterclockwise_results(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Key
+) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    part, rest = minimizing_split(contour,
+                                  area_requirement=area_requirement,
+                                  key=key)
+    assert part.orientation is Orientation.COUNTERCLOCKWISE
+    assert rest.orientation is Orientation.COUNTERCLOCKWISE
