@@ -662,82 +662,47 @@ def is_after_domain(value: Fraction,
     return value >= end > start or value <= end < start
 
 
-def robust_sqrt(fraction: Fraction) -> Fraction:
-    """
-    Returns square root of the given fraction.
-
-    The result is exact if the numerator and the denominator
-    are perfect squares. Otherwise it is rounded down to a multiple
-    of a power of two so that it has at least `ROOT_PRECISION_BITS`
-    significant bits. The result does not depend on any global state.
-
-    :param fraction: non-negative number to take square root of
-    :return: square root of the fraction.
-    """
-    return _integer_root(fraction, 2)
-
-
 def fourth_root(fraction: Fraction) -> Fraction:
     """
     Returns fourth root of the given fraction.
 
-    The result is exact if the numerator and the denominator
-    are perfect fourth powers. Otherwise it is rounded down once
-    (not once per square root) to a multiple of a power of two
-    so that it has at least `ROOT_PRECISION_BITS` significant bits.
+    Uses only integer arithmetic, so the result does not depend
+    on any global state. The result is exact if the numerator
+    and the denominator are perfect fourth powers. Otherwise it is
+    rounded down once (not once per square root) to a multiple
+    of a power of two so that it has at least `ROOT_PRECISION_BITS`
+    significant bits.
 
     :param fraction: non-negative number to take fourth root of
     :return: fourth root of the fraction.
-    """
-    return _integer_root(fraction, 4)
-
-
-def _integer_root(fraction: Fraction,
-                  degree: int) -> Fraction:
-    """
-    Returns root of the given fraction of degree two or four.
-
-    Uses only integer arithmetic. For a non-negative integer `m`,
-    `isqrt(isqrt(m))` equals the floor of the fourth root of `m`,
-    so the fourth root is rounded down only once.
-
-    :param fraction: non-negative number to take root of
-    :param degree: degree of the root, either 2 or 4
-    :return: exact root if both the numerator and the denominator
-        are perfect powers of `degree`, the root rounded down
-        to a multiple of a power of two otherwise.
     :raises ValueError: if the fraction is negative.
     """
     numerator, denominator = fraction.numerator, fraction.denominator
     if numerator < 0:
         raise ValueError(f"Cannot take root of negative number: {fraction}")
-    numerator_root = _floor_root(numerator, degree)
-    denominator_root = _floor_root(denominator, degree)
-    if (numerator_root ** degree == numerator
-            and denominator_root ** degree == denominator):
+    numerator_root = _floor_fourth_root(numerator)
+    denominator_root = _floor_fourth_root(denominator)
+    if (numerator_root ** 4 == numerator
+            and denominator_root ** 4 == denominator):
         return Fraction(numerator_root, denominator_root)
     shift = max(0, ROOT_PRECISION_BITS
-                - (numerator.bit_length() - denominator.bit_length())
-                // degree)
-    scaled = (numerator << degree * shift) // denominator
-    return Fraction(_floor_root(scaled, degree), 1 << shift)
+                - (numerator.bit_length() - denominator.bit_length()) // 4)
+    scaled = (numerator << 4 * shift) // denominator
+    return Fraction(_floor_fourth_root(scaled), 1 << shift)
 
 
-def _floor_root(value: int,
-                degree: int) -> int:
+def _floor_fourth_root(value: int) -> int:
     """
-    Returns root of a non-negative integer rounded down.
+    Returns fourth root of a non-negative integer rounded down.
 
-    :param value: non-negative integer to take root of
-    :param degree: degree of the root, a power of two
-    :return: the largest integer whose power of `degree`
-        does not exceed `value`.
+    For a non-negative integer `m`, `isqrt(isqrt(m))` equals the floor
+    of the fourth root of `m`, so the result is rounded down only once.
+
+    :param value: non-negative integer to take fourth root of
+    :return: the largest integer whose fourth power does not exceed
+        `value`.
     """
-    root = value
-    while degree > 1:
-        root = isqrt(root)
-        degree //= 2
-    return root
+    return isqrt(isqrt(value))
 
 
 def inverse_shoelace(area: Fraction,
