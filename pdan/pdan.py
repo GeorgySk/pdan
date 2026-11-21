@@ -186,7 +186,7 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
     tails = iter([*segments[1:], segments[0]])
     heads = iter([*segments[2:], *segments])
     tail = next(tails)
-    accumulated_area = 0
+    accumulated_area = Fraction(0)
     right_vertices = deque([tail.start])
     left_vertices = deque(contour.vertices[1:])
     for head in heads:
@@ -469,8 +469,7 @@ def vertical_domain_splitter(area_requirement: Fraction,
     sign = 1 if domain_image_intersection_y < domain.end.y else -1
     tail_intersection_diff_y = fourth_root(
         fourth_power_tail_intersection_diff_y)
-    tail_y = (Fraction(sign * tail_intersection_diff_y)
-              + domain_image_intersection_y)
+    tail_y = sign * tail_intersection_diff_y + domain_image_intersection_y
     if is_before_domain(tail_y, domain.start.y, domain.end.y):
         return Segment(domain.start, countersegment.start)
     if is_after_domain(tail_y, domain.start.y, domain.end.y):
@@ -513,7 +512,7 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
     sign = 1 if domain.start.x > countersegment.end.x else -1
     tail_intersection_diff_x = fourth_root(
         fourth_power_tail_intersection_diff_x)
-    tail_x = Fraction(countersegment.start.x + sign * tail_intersection_diff_x)
+    tail_x = countersegment.start.x + sign * tail_intersection_diff_x
     if is_before_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.start, countersegment.start)
     if is_after_domain(tail_x, domain.start.x, domain.end.x):
@@ -761,7 +760,7 @@ def inverse_shoelace(area: Fraction,
     """
     orientation = Contour([endpoint, base_start, base_end]).orientation
     sign = 1 if orientation is Orientation.COUNTERCLOCKWISE else -1
-    if base_end.x - base_start.x == 0:
+    if base_end.x == base_start.x:
         numerator = 2 * area + sign * (base_start.x * base_start.y
                                        - endpoint.x * base_start.y)
         denominator = sign * (base_start.x - endpoint.x)
