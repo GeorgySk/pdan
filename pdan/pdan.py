@@ -173,6 +173,13 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
     domain segment when iterating in counterclockwise order,
     and, finally, the area differences that should be found in the
     quadrilateral based on the domains and the countersegments.
+
+    :param contour: defines a convex polygon, with fraction coordinates
+    :param area_requirement: area of the part to the right
+        of a splitter, strictly between zero and area of the polygon
+    :return: partitions in the order of the sweep around the contour.
+    :raises ValueError: if no countervertex is found for the first
+        domain, which does not happen for a valid area requirement.
     """
     segments = contour.segments
     # in gon, the last segment goes first, the first one goes second, and so on
@@ -286,6 +293,16 @@ def to_splitter(domain: Segment,
     finds another "splitter" segment connecting these two
     so that the area on the right would be
     equal to the given area requirement.
+
+    :param domain: segment of the boundary where the splitter starts
+    :param countersegment: segment of the boundary where the splitter
+        ends
+    :param area_requirement: area of the quadrilateral formed by
+        the splitter, the end of `domain` and the start
+        of `countersegment`
+    :return: splitter with the start on `domain` and the end
+        on `countersegment`; the segment connecting the starts
+        or the ends of both if the optimal splitter lies beyond them.
     """
     if (domain.start.x == domain.end.x
             and countersegment.end.x == countersegment.start.x):
@@ -338,6 +355,19 @@ def to_right_left_contours(domain: Segment,  # noqa: PLR0912, C901
 
     The contours are built from the splitter and vertices delimiting
     right and left parts based on the splitter's endpoints location.
+
+    :param domain: segment of the boundary where the splitter starts
+    :param countersegment: segment of the boundary where the splitter
+        ends
+    :param splitter: segment connecting `domain` and `countersegment`
+    :param right_vertices: vertices going counterclockwise from
+        `domain` to `countersegment`; empty if there are none
+        between them
+    :param left_vertices: vertices going counterclockwise from
+        `countersegment` to `domain`; empty if there are none
+        between them
+    :return: contours of the parts to the right and to the left
+        of the splitter, without collinear vertices at its endpoints.
     """
     if not right_vertices:
         if splitter.start == domain.start:
@@ -386,6 +416,13 @@ def vertical_segments_splitter(area_requirement: Fraction,
     and "countersegment" segments
     so that the area on the right would be
     equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param domain: vertical segment where the splitter starts
+    :param countersegment: vertical segment where the splitter ends
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     tail_y = ((2 * area_requirement
                + countersegment.start.x * countersegment.start.y
@@ -412,6 +449,13 @@ def vertical_domain_splitter(area_requirement: Fraction,
     and an inclined "countersegment" segments
     so that the area on the right would be
     equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param domain: vertical segment where the splitter starts
+    :param countersegment: inclined segment where the splitter ends
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     slope, intercept = slope_intercept(countersegment.start,
                                        countersegment.end)
@@ -449,6 +493,13 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
     and a vertical "countersegment" segments
     so that the area on the right would be
     equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param domain: inclined segment where the splitter starts
+    :param countersegment: vertical segment where the splitter ends
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     slope, intercept = slope_intercept(domain.start, domain.end)
     const = (2 * area_requirement
@@ -489,6 +540,20 @@ def parallel_inclined_segments_splitter(*,  # noqa: PLR0913
     Finds segment connecting parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
     would be equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param intercept_diff: `domain_intercept` minus
+        `countersegment_intercept`
+    :param domain: inclined segment where the splitter starts
+    :param domain_intercept: intercept of the line through `domain`
+    :param countersegment: inclined segment where the splitter ends,
+        parallel to `domain`
+    :param countersegment_intercept: intercept of the line through
+        `countersegment`
+    :param slope: common slope of `domain` and `countersegment`
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     tail_x = (area_requirement / intercept_diff
               + (domain.end.x + countersegment.start.x) / 2
@@ -521,6 +586,20 @@ def general_case_splitter(*,  # noqa: PLR0913
     Finds segment connecting non-parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
     would be equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param intercept_diff: `domain_intercept` minus
+        `countersegment_intercept`
+    :param domain: inclined segment where the splitter starts
+    :param domain_intercept: intercept of the line through `domain`
+    :param domain_slope: slope of the line through `domain`
+    :param countersegment: inclined segment where the splitter ends
+    :param countersegment_intercept: intercept of the line through
+        `countersegment`
+    :param image_slope: slope of the line through `countersegment`
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     slope_diff = domain_slope - image_slope
     const = (2 * area_requirement
@@ -556,6 +635,12 @@ def is_before_domain(value: Fraction,
 
     Checks if X or Y coordinate of the segment's tail
     was found before the starting vertex of the "domain".
+
+    :param value: coordinate of the splitter's tail
+    :param start: same coordinate of the start of the domain
+    :param end: same coordinate of the end of the domain
+    :return: whether `value` coincides with `start` or lies
+        on the opposite side of it from `end`.
     """
     return value <= start < end or value >= start > end
 
@@ -568,6 +653,12 @@ def is_after_domain(value: Fraction,
 
     Checks if X or Y coordinate of the segment's tail
     was found after the second vertex of the "domain".
+
+    :param value: coordinate of the splitter's tail
+    :param start: same coordinate of the start of the domain
+    :param end: same coordinate of the end of the domain
+    :return: whether `value` coincides with `end` or lies
+        on the opposite side of it from `start`.
     """
     return value >= end > start or value <= end < start
 
@@ -657,7 +748,16 @@ def inverse_shoelace(area: Fraction,
     """
     Finds point in triangle based on inverse shoelace algorithm.
 
-    Coordinates of the points must be of `Fraction` type.
+    Finds the point on the line through `base_start` and `base_end`
+    such that the triangle formed by `endpoint`, `base_start`
+    and that point has the given area. Coordinates of the points
+    must be of `Fraction` type.
+
+    :param area: area of the triangle to form
+    :param endpoint: vertex of the triangle opposite to its base
+    :param base_start: vertex of the triangle where its base starts
+    :param base_end: point that sets the direction of the base
+    :return: vertex of the triangle where its base ends.
     """
     orientation = Contour([endpoint, base_start, base_end]).orientation
     sign = 1 if orientation is Orientation.COUNTERCLOCKWISE else -1
