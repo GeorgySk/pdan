@@ -103,9 +103,9 @@ def minimizing_split(contour: Contour,
     :param key: function to be applied to a pair of contours;
         its values only need to support comparison with `<`
     :return: two contours if the area requirement is between zero
-        and area of the polygon; empty geometry and the input contour
-        if it is zero; the input contour and empty geometry if it is
-        equal to area of the polygon.
+        and area of the polygon; empty geometry and a copy of the input
+        contour with fraction coordinates if it is zero; that copy and
+        empty geometry if it is equal to area of the polygon.
     :raises ValueError: if the area requirement is negative
         or exceeds area of the polygon.
     """
