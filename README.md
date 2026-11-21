@@ -64,6 +64,25 @@ True
 
 ```
 
+All computations are exact. Integer and float inputs are converted
+to `Fraction`s, floats to the exact binary value they store:
+`0.1` becomes `3602879701896397/36028797018963968`, not `1/10`.
+To work with exact decimal values, pass `Fraction`s, for example
+`Fraction("0.1")`:
+
+```python
+>>> part, _ = minimizing_split(contour, 0.1, key=lambda x, y: x.length)
+>>> Polygon(part).area == 0.1
+True
+>>> Polygon(part).area == Fraction(1, 10)
+False
+>>> part, _ = minimizing_split(contour, Fraction("0.1"),
+...                           key=lambda x, y: x.length)
+>>> Polygon(part).area == Fraction(1, 10)
+True
+
+```
+
 Development
 -----------
 

@@ -96,6 +96,12 @@ def minimizing_split(contour: Contour,
     value when applied to `key` function, and returns it along with
     the remaining part as contours.
 
+    Floats are converted to fractions exactly, so `0.1` becomes
+    `3602879701896397/36028797018963968`, the value the float actually
+    stores, and the results compare equal to the float inputs.
+    To work with exact decimal values, pass fractions instead,
+    for example `Fraction("0.1")`.
+
     :param contour: defines a convex polygon; integer and float
         coordinates are converted to fractions
     :param area_requirement: area of a part to return; converted
