@@ -13,7 +13,9 @@ readme = "README.md"
 license-files = ["LICENSE"]
 requires-python = ">=3.11,<4.0"
 dependencies = [
-    "gon>=6.0.0,<7.0.0"
+    "gon>=6.0.0,<7.0.0",
+    # gon's own dependency; used directly for the convexity check
+    "ground>=9.0.0,<10.0.0"
 ]
 
 [dependency-groups]
@@ -49,10 +51,10 @@ addopts = "--verbose -s --hypothesis-profile=default --doctest-glob=README.md"
 [tool.mypy]
 strict = true
 
-# `gon` and `hypothesis_geometry` ship neither inline types (`py.typed`)
-# nor stub packages, so mypy cannot analyze them.
+# `gon`, `ground` and `hypothesis_geometry` ship neither inline types
+# (`py.typed`) nor stub packages, so mypy cannot analyze them.
 [[tool.mypy.overrides]]
-module = ["gon.*", "hypothesis_geometry.*"]
+module = ["gon.*", "ground.*", "hypothesis_geometry.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

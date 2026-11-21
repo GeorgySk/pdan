@@ -13,6 +13,7 @@ from hypothesis import given
 from pdan.pdan import (
     SupportsLessThan,
     minimizing_split,
+    validate_convex_contour,
 )
 from tests.strategies.base import (
     metrics,
@@ -21,6 +22,7 @@ from tests.strategies.base import (
     positive_nonzero_fractions,
 )
 from tests.strategies.geometry import (
+    concave_contours,
     convex_contours,
     convex_contours_with_area_requirements,
 )
@@ -146,3 +148,28 @@ def test_counterclockwise_results(
                                   key=key)
     assert part.orientation is Orientation.COUNTERCLOCKWISE
     assert rest.orientation is Orientation.COUNTERCLOCKWISE
+
+
+@given(contour=concave_contours,
+       key=metrics)
+def test_concave(contour: Contour,
+                 key: Key) -> None:
+    with pytest.raises(ValueError, match="convex"):
+        minimizing_split(contour,
+                         area_requirement=Polygon(contour).area / 2,
+                         key=key)
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=metrics)
+def test_parts_are_valid(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Key
+) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    part, rest = minimizing_split(contour,
+                                  area_requirement=area_requirement,
+                                  key=key)
+    # so that the parts can be split further
+    validate_convex_contour(part)
+    validate_convex_contour(rest)

@@ -29,6 +29,7 @@ from gon.base import (
     Segment,
 )
 from gon.hints import Maybe
+from ground.base import get_context
 
 ROOT_PRECISION_BITS = 96
 """Relative precision of inexact roots, close to 28 decimal digits."""
@@ -112,8 +113,9 @@ def minimizing_split(contour: Contour,
     `2 ** -(2 * ROOT_PRECISION_BITS)` in its length, and the
     coordinates have denominators of about that many bits.
 
-    :param contour: defines a convex polygon, in either orientation;
-        integer and float coordinates are converted to fractions
+    :param contour: defines a convex polygon, in either orientation,
+        without collinear consecutive vertices; integer and float
+        coordinates are converted to fractions
     :param area_requirement: area of a part to return; converted
         to a fraction if given as an integer or a float
     :param key: function to be applied to a pair of contours;
@@ -123,11 +125,14 @@ def minimizing_split(contour: Contour,
         copy of the input contour with fraction coordinates if it is
         zero; that copy and empty geometry if it is equal to area
         of the polygon. All returned contours are counterclockwise.
-    :raises ValueError: if the area requirement is negative
-        or exceeds area of the polygon.
+    :raises ValueError: if the contour doesn't define a non-degenerate
+        convex polygon (see `validate_convex_contour`), or if the area
+        requirement is negative or exceeds area of the polygon.
     """
+    contour = to_fraction_contour(contour)
+    validate_convex_contour(contour)
     # the sweep in `to_partitions` assumes counterclockwise order
-    contour = to_fraction_contour(contour).to_counterclockwise()
+    contour = contour.to_counterclockwise()
     area_requirement = Fraction(area_requirement)
     area = Polygon(contour).area
     if area_requirement < 0:
@@ -165,6 +170,26 @@ def to_split_contours(partition: Partition) -> tuple[Contour, Contour]:
                                   splitter=splitter,
                                   right_vertices=partition.right_vertices,
                                   left_vertices=partition.left_vertices)
+
+
+def validate_convex_contour(contour: Contour) -> None:
+    """
+    Checks that the contour defines a non-degenerate convex polygon.
+
+    Uses `gon`'s own definition of a valid contour, which rules out
+    collinear consecutive vertices (including repeated ones)
+    and self-intersections, and then checks that all turns
+    are in the same direction.
+
+    :param contour: contour with fraction coordinates, in either
+        orientation
+    :raises ValueError: if the contour has fewer than three vertices,
+        three consecutive vertices on one line, self-intersections,
+        or doesn't define a convex polygon.
+    """
+    contour.validate()
+    if not get_context().is_region_convex(contour):
+        raise ValueError("Contour must define a convex polygon.")
 
 
 def to_fraction_contour(contour: Contour) -> Contour:

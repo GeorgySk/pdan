@@ -8,6 +8,24 @@ and this project adheres to `Semantic Versioning <https://semver.org/>`_.
 Unreleased
 ----------
 
+Changed
+~~~~~~~
+
+- ``minimizing_split`` now raises ``ValueError`` if the contour doesn't
+  define a non-degenerate convex polygon: if it has fewer than three
+  vertices, three consecutive vertices on one line (including repeated
+  ones), self-intersections or a reflex angle. Such contours used to give
+  parts with a wrong area, or fail with unrelated errors. Contours with
+  collinear consecutive vertices used to work and are now rejected too,
+  following ``gon``'s definition of a valid contour.
+- All contours returned by ``minimizing_split`` are now counterclockwise.
+
+Fixed
+~~~~~
+
+- Clockwise contours used to give non-optimal splits, and sometimes parts
+  with a wrong area.
+
 0.2.4 (2026-11-20)
 ------------------------------
 

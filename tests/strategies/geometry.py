@@ -123,3 +123,68 @@ points_pairs = st.lists(fraction_points,
                         min_size=2,
                         max_size=2,
                         unique=True)
+
+
+def _reverse_maybe(contour: Contour, reverse: bool) -> Contour:  # noqa: FBT001
+    return contour.to_clockwise() if reverse else contour
+
+
+any_orientation_convex_contours = st.builds(_reverse_maybe,
+                                            convex_contours,
+                                            st.booleans())
+concave_contours = planar.concave_contours(fractions,
+                                           max_size=MAX_CONTOUR_SIZE)
+
+
+def _to_star(contour: Contour) -> Contour:
+    # visiting every second vertex of a convex polygon with an odd number
+    # of vertices turns in one direction but winds around twice
+    vertices = contour.vertices
+    return Contour([*vertices[::2], *vertices[1::2]])
+
+
+STAR_MIN_SIZE = 5
+star_contours = (planar.convex_contours(fractions,
+                                        min_size=STAR_MIN_SIZE,
+                                        max_size=max(STAR_MIN_SIZE,
+                                                     MAX_CONTOUR_SIZE))
+                 .filter(lambda contour: len(contour.vertices) % 2 == 1)
+                 .map(_to_star))
+
+
+@st.composite
+def to_contours_with_repeated_vertex(draw: st.DrawFn) -> Contour:
+    vertices = draw(any_orientation_convex_contours).vertices
+    index = draw(st.integers(0, len(vertices) - 1))
+    return Contour([*vertices[:index + 1], *vertices[index:]])
+
+
+contours_with_repeated_vertex = to_contours_with_repeated_vertex()
+
+
+@st.composite
+def to_collinear_contours(draw: st.DrawFn) -> Contour:
+    start, end = draw(points_pairs)
+    parameters = draw(st.lists(fractions, min_size=3,
+                               max_size=MAX_CONTOUR_SIZE, unique=True))
+    return Contour([Point(start.x + parameter * (end.x - start.x),
+                          start.y + parameter * (end.y - start.y))
+                    for parameter in parameters])
+
+
+collinear_contours = to_collinear_contours()
+
+
+@st.composite
+def to_contours_with_collinear_vertex(
+        draw: st.DrawFn) -> tuple[Contour, Contour]:
+    contour = draw(any_orientation_convex_contours)
+    vertices = contour.vertices
+    index = draw(st.integers(0, len(vertices) - 1))
+    start, end = vertices[index], vertices[(index + 1) % len(vertices)]
+    midpoint = Point((start.x + end.x) / 2, (start.y + end.y) / 2)
+    return contour, Contour([*vertices[:index + 1], midpoint,
+                             *vertices[index + 1:]])
+
+
+contours_with_collinear_vertex = to_contours_with_collinear_vertex()
