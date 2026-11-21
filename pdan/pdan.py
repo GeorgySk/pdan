@@ -124,25 +124,29 @@ def minimizing_split(contour: Contour,
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
-    min_key_value: KeyValue | None = None
-    min_key_contours = None
-    for partition in partitions:
-        splitter = to_splitter(domain=partition.domain,
-                               countersegment=partition.countersegment,
-                               area_requirement=partition.area_difference)
-        right_contour, left_contour = to_right_left_contours(
-            domain=partition.domain,
-            countersegment=partition.countersegment,
-            splitter=splitter,
-            right_vertices=partition.right_vertices,
-            left_vertices=partition.left_vertices)
-        key_value = key(right_contour, left_contour)
-        if min_key_value is None or key_value < min_key_value:
-            min_key_contours = right_contour, left_contour
-            min_key_value = key_value
-    if min_key_contours is None:
-        raise ValueError("Couldn't find any split of the polygon.")
-    return min_key_contours
+    return min(map(to_split_contours, partitions),
+               key=lambda contours: key(*contours))
+
+
+def to_split_contours(partition: Partition) -> tuple[Contour, Contour]:
+    """
+    Splits the polygon at the given partition.
+
+    Finds the splitter between the domain and the countersegment
+    of the partition and builds the contours on both sides of it.
+
+    :param partition: candidate place to split the polygon
+    :return: contours of the parts to the right and to the left
+        of the splitter.
+    """
+    splitter = to_splitter(domain=partition.domain,
+                           countersegment=partition.countersegment,
+                           area_requirement=partition.area_difference)
+    return to_right_left_contours(domain=partition.domain,
+                                  countersegment=partition.countersegment,
+                                  splitter=splitter,
+                                  right_vertices=partition.right_vertices,
+                                  left_vertices=partition.left_vertices)
 
 
 def to_fraction_contour(contour: Contour) -> Contour:
@@ -178,8 +182,6 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
     :param area_requirement: area of the part to the right
         of a splitter, strictly between zero and area of the polygon
     :return: partitions in the order of the sweep around the contour.
-    :raises ValueError: if no countervertex is found for the first
-        domain, which does not happen for a valid area requirement.
     """
     segments = contour.segments
     # in gon, the last segment goes first, the first one goes second, and so on
@@ -189,6 +191,9 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
     accumulated_area = Fraction(0)
     right_vertices = deque([edge.start])
     left_vertices = deque(contour.vertices[1:])
+    # `counteredges` spans more than a full turn, and the triangles fanned
+    # from `edge.start` cover the whole polygon in fewer steps,
+    # so the loop always breaks for an area requirement below its area
     for counteredge in counteredges:
         right_vertices.append(counteredge.start)
         left_vertices.popleft()
@@ -213,8 +218,6 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
             right_vertices.append(countervertex)
             is_countervertex_original = False
         break
-    else:
-        raise ValueError("Couldn't find countervertex.")
     is_edge_start_original = True
     while True:
         edge_triangle_area = Polygon(Contour([edge.start,
