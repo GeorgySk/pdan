@@ -44,7 +44,7 @@ optional = true
 source = ["pdan"]
 
 [tool.pytest.ini_options]
-addopts = "--verbose -s --hypothesis-profile=default"
+addopts = "--verbose -s --hypothesis-profile=default --doctest-glob=README.md"
 
 [tool.mypy]
 strict = true

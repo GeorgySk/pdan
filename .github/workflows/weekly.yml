@@ -1,0 +1,28 @@
+# Not part of the copier template: runs the slow "thorough" Hypothesis profile.
+name: Weekly
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"  # Sundays at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  POETRY_VERSION: "2.5.1"
+
+jobs:
+  thorough-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        run: pipx install "poetry==${POETRY_VERSION}"
+      - name: Install dependencies
+        run: poetry install --with dev
+      - name: Run tests
+        run: poetry run pytest --hypothesis-profile=thorough
