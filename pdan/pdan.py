@@ -699,18 +699,18 @@ def fourth_root(fraction: Fraction) -> Fraction:
     numerator, denominator = fraction.numerator, fraction.denominator
     if numerator < 0:
         raise ValueError(f"Cannot take root of negative number: {fraction}")
-    numerator_root = _floor_fourth_root(numerator)
-    denominator_root = _floor_fourth_root(denominator)
+    numerator_root = floor_fourth_root(numerator)
+    denominator_root = floor_fourth_root(denominator)
     if (numerator_root ** 4 == numerator
             and denominator_root ** 4 == denominator):
         return Fraction(numerator_root, denominator_root)
     shift = max(0, ROOT_PRECISION_BITS
                 - (numerator.bit_length() - denominator.bit_length()) // 4)
     scaled = (numerator << 4 * shift) // denominator
-    return Fraction(_floor_fourth_root(scaled), 1 << shift)
+    return Fraction(floor_fourth_root(scaled), 1 << shift)
 
 
-def _floor_fourth_root(value: int) -> int:
+def floor_fourth_root(value: int) -> int:
     """
     Returns fourth root of a non-negative integer rounded down.
 
