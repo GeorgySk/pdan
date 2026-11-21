@@ -102,6 +102,16 @@ def minimizing_split(contour: Contour,
     To work with exact decimal values, pass fractions instead,
     for example `Fraction("0.1")`.
 
+    The area of the returned part always equals the area requirement
+    exactly. The splitter is the shortest one between the edges
+    it connects, but its endpoints may be irrational, for example
+    when cutting off area 3 from a 4 by 4 square. In such cases,
+    one endpoint is rounded to `ROOT_PRECISION_BITS` significant bits,
+    and the other one is placed so that the area stays exact.
+    The splitter is then optimal up to a relative error of about
+    `2 ** -(2 * ROOT_PRECISION_BITS)` in its length, and the
+    coordinates have denominators of about that many bits.
+
     :param contour: defines a convex polygon; integer and float
         coordinates are converted to fractions
     :param area_requirement: area of a part to return; converted
