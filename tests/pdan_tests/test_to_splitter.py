@@ -22,9 +22,9 @@ def test_endpoints_location(countersegments_pair: tuple[Segment, Segment]
     assert splitter.end in countersegment
 
 
-@given(countersegments_pairs=countersegments_pairs)
-def test_area(countersegments_pairs: tuple[Segment, Segment]) -> None:
-    domain, countersegment = countersegments_pairs
+@given(countersegments_pair=countersegments_pairs)
+def test_area(countersegments_pair: tuple[Segment, Segment]) -> None:
+    domain, countersegment = countersegments_pair
     area_requirement = Polygon(Contour([domain.start, domain.end,
                                         countersegment.start])).area
     splitter = to_splitter(domain=domain,
@@ -39,10 +39,10 @@ def test_area(countersegments_pairs: tuple[Segment, Segment]) -> None:
                                 splitter.end])).area == area_requirement
 
 
-@given(countersegments_pairs=countersegments_pairs)
-def test_perimeter_inequalities(countersegments_pairs: tuple[Segment, Segment]
+@given(countersegments_pair=countersegments_pairs)
+def test_perimeter_inequalities(countersegments_pair: tuple[Segment, Segment]
                                 ) -> None:
-    domain, countersegment = countersegments_pairs
+    domain, countersegment = countersegments_pair
     area_requirement = Polygon(Contour([domain.start, domain.end,
                                         countersegment.start])).area
     splitter = to_splitter(domain=domain,

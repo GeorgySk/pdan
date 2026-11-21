@@ -183,80 +183,80 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
     """
     segments = contour.segments
     # in gon, the last segment goes first, the first one goes second, and so on
-    tails = iter([*segments[1:], segments[0]])
-    heads = iter([*segments[2:], *segments])
-    tail = next(tails)
+    edges = iter([*segments[1:], segments[0]])
+    counteredges = iter([*segments[2:], *segments])
+    edge = next(edges)
     accumulated_area = Fraction(0)
-    right_vertices = deque([tail.start])
+    right_vertices = deque([edge.start])
     left_vertices = deque(contour.vertices[1:])
-    for head in heads:
-        right_vertices.append(head.start)
+    for counteredge in counteredges:
+        right_vertices.append(counteredge.start)
         left_vertices.popleft()
-        covered_triangle_area = Polygon(Contour([tail.start,
-                                                 head.start,
-                                                 head.end])).area
+        covered_triangle_area = Polygon(Contour([edge.start,
+                                                 counteredge.start,
+                                                 counteredge.end])).area
         accumulated_area += covered_triangle_area
         if accumulated_area < area_requirement:
             continue
         elif accumulated_area == area_requirement:
-            right_vertices.append(head.end)
+            right_vertices.append(counteredge.end)
             left_vertices.popleft()
-            head = next(heads)  # noqa: PLW2901
-            countervertex = head.start
-            is_head_based_on_original_vertex = True
+            counteredge = next(counteredges)  # noqa: PLW2901
+            countervertex = counteredge.start
+            is_countervertex_original = True
         else:
             area = covered_triangle_area + area_requirement - accumulated_area
             countervertex = inverse_shoelace(area=area,
-                                             endpoint=tail.start,
-                                             base_start=head.start,
-                                             base_end=head.end)
+                                             endpoint=edge.start,
+                                             base_start=counteredge.start,
+                                             base_end=counteredge.end)
             right_vertices.append(countervertex)
-            is_head_based_on_original_vertex = False
+            is_countervertex_original = False
         break
     else:
         raise ValueError("Couldn't find countervertex.")
-    is_tail_start_original = True
+    is_edge_start_original = True
     while True:
-        tail_based_triangle_area = Polygon(Contour([tail.start,
-                                                    tail.end,
-                                                    countervertex])).area
-        head_based_triangle_area = Polygon(Contour([tail.end,
-                                                    countervertex,
-                                                    head.end])).area
+        edge_triangle_area = Polygon(Contour([edge.start,
+                                              edge.end,
+                                              countervertex])).area
+        counteredge_triangle_area = Polygon(Contour([edge.end,
+                                                     countervertex,
+                                                     counteredge.end])).area
         right_vertices.popleft()
-        left_vertices.append(tail.start)
-        if tail_based_triangle_area == head_based_triangle_area:
-            domain = tail
-            domain_based_area = tail_based_triangle_area
-            image_end = head.end
-            tail = next(tails, None)
-            head = next(heads)
-        elif head_based_triangle_area > tail_based_triangle_area:
-            domain = tail
-            domain_based_area = tail_based_triangle_area
-            image_end = inverse_shoelace(area=tail_based_triangle_area,
-                                         endpoint=tail.end,
-                                         base_start=countervertex,
-                                         base_end=head.end)
-            left_vertices.appendleft(image_end)
-            tail = next(tails, None)
-            head = Segment(image_end, head.end)
+        left_vertices.append(edge.start)
+        if edge_triangle_area == counteredge_triangle_area:
+            domain = edge
+            domain_based_area = edge_triangle_area
+            countersegment_end = counteredge.end
+            edge = next(edges, None)
+            counteredge = next(counteredges)
+        elif counteredge_triangle_area > edge_triangle_area:
+            domain = edge
+            domain_based_area = edge_triangle_area
+            countersegment_end = inverse_shoelace(area=edge_triangle_area,
+                                                  endpoint=edge.end,
+                                                  base_start=countervertex,
+                                                  base_end=counteredge.end)
+            left_vertices.appendleft(countersegment_end)
+            edge = next(edges, None)
+            counteredge = Segment(countersegment_end, counteredge.end)
         else:
-            area_difference = (tail_based_triangle_area
-                               - head_based_triangle_area)
+            area_difference = (edge_triangle_area
+                               - counteredge_triangle_area)
             domain_end = inverse_shoelace(area=area_difference,
-                                          endpoint=head.end,
-                                          base_start=tail.end,
-                                          base_end=tail.start)
+                                          endpoint=counteredge.end,
+                                          base_start=edge.end,
+                                          base_end=edge.start)
             right_vertices.appendleft(domain_end)
-            domain = Segment(tail.start, domain_end)
+            domain = Segment(edge.start, domain_end)
             domain_based_area = Polygon(Contour([domain.start,
                                                  domain.end,
                                                  countervertex])).area
-            image_end = head.end
-            tail = Segment(domain_end, tail.end)
-            head = next(heads)
-        countersegment = Segment(countervertex, image_end)
+            countersegment_end = counteredge.end
+            edge = Segment(domain_end, edge.end)
+            counteredge = next(counteredges)
+        countersegment = Segment(countervertex, countersegment_end)
         right_vertices_list = list(right_vertices)
         resulting_right_vertices = (right_vertices_list
                                     if right_vertices_list[1:-1] else [])
@@ -268,19 +268,19 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
                         right_vertices=resulting_right_vertices,
                         left_vertices=resulting_left_vertices,
                         area_difference=domain_based_area)
-        if tail is None:
+        if edge is None:
             return
-        countervertex = head.start
-        if not is_head_based_on_original_vertex:
+        countervertex = counteredge.start
+        if not is_countervertex_original:
             right_vertices.pop()
-        if not is_tail_start_original:
+        if not is_edge_start_original:
             left_vertices.pop()
         right_vertices.append(countervertex)
         left_vertices.popleft()
-        is_head_based_on_original_vertex = (head_based_triangle_area
-                                            <= tail_based_triangle_area)
-        is_tail_start_original = (head_based_triangle_area
-                                  >= tail_based_triangle_area)
+        is_countervertex_original = (counteredge_triangle_area
+                                     <= edge_triangle_area)
+        is_edge_start_original = (counteredge_triangle_area
+                                  >= edge_triangle_area)
 
 
 def to_splitter(domain: Segment,
@@ -341,7 +341,7 @@ def to_splitter(domain: Segment,
         domain_slope=domain_slope,
         countersegment=countersegment,
         countersegment_intercept=countersegment_intercept,
-        image_slope=countersegment_slope)
+        countersegment_slope=countersegment_slope)
 
 
 def to_right_left_contours(domain: Segment,  # noqa: PLR0912, C901
@@ -459,23 +459,23 @@ def vertical_domain_splitter(area_requirement: Fraction,
     """
     slope, intercept = slope_intercept(countersegment.start,
                                        countersegment.end)
-    domain_image_intersection_y = slope * domain.end.x + intercept
+    lines_intersection_y = slope * domain.end.x + intercept
     const = (2 * area_requirement
-             - domain_image_intersection_y * countersegment.start.x
+             - lines_intersection_y * countersegment.start.x
              + domain.end.y * (countersegment.start.x - domain.end.x))
     fourth_power_tail_intersection_diff_y = (
-            (domain_image_intersection_y * domain.end.x + const) ** 2
+            (lines_intersection_y * domain.end.x + const) ** 2
             * (1 + slope ** 2))
-    sign = 1 if domain_image_intersection_y < domain.end.y else -1
+    sign = 1 if lines_intersection_y < domain.end.y else -1
     tail_intersection_diff_y = fourth_root(
         fourth_power_tail_intersection_diff_y)
-    tail_y = sign * tail_intersection_diff_y + domain_image_intersection_y
+    tail_y = sign * tail_intersection_diff_y + lines_intersection_y
     if is_before_domain(tail_y, domain.start.y, domain.end.y):
         return Segment(domain.start, countersegment.start)
     if is_after_domain(tail_y, domain.start.y, domain.end.y):
         return Segment(domain.end, countersegment.end)
     head_x = ((const + domain.end.x * tail_y)
-              / (tail_y - domain_image_intersection_y))
+              / (tail_y - lines_intersection_y))
     head_y = slope * head_x + intercept
     tail_point = Point(domain.end.x, tail_y)
     head_point = Point(head_x, head_y)
@@ -505,9 +505,9 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
              + slope * domain.end.x * countersegment.start.x
              + intercept * domain.end.x - countersegment.start.y * domain.end.x
              + countersegment.start.x * countersegment.start.y)
-    domain_image_intersection_y = slope * countersegment.start.x + intercept
+    lines_intersection_y = slope * countersegment.start.x + intercept
     fourth_power_tail_intersection_diff_x = (
-            (const - domain_image_intersection_y * countersegment.start.x) ** 2
+            (const - lines_intersection_y * countersegment.start.x) ** 2
             / (1 + slope ** 2))
     sign = 1 if domain.start.x > countersegment.end.x else -1
     tail_intersection_diff_x = fourth_root(
@@ -518,7 +518,7 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
     if is_after_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.end, countersegment.end)
     tail_y = tail_x * slope + intercept
-    head_y = ((const - tail_x * domain_image_intersection_y)
+    head_y = ((const - tail_x * lines_intersection_y)
               / (countersegment.start.x - tail_x))
     tail_point = Point(tail_x, tail_y)
     head_point = Point(countersegment.start.x, head_y)
@@ -578,7 +578,7 @@ def general_case_splitter(*,  # noqa: PLR0913
                           domain_slope: Fraction,
                           countersegment: Segment,
                           countersegment_intercept: Fraction,
-                          image_slope: Fraction) -> Segment:
+                          countersegment_slope: Fraction) -> Segment:
     """
     Finds splitter for non-parallel inclined domain and countersegment.
 
@@ -596,20 +596,20 @@ def general_case_splitter(*,  # noqa: PLR0913
     :param countersegment: inclined segment where the splitter ends
     :param countersegment_intercept: intercept of the line through
         `countersegment`
-    :param image_slope: slope of the line through `countersegment`
+    :param countersegment_slope: slope of the line through `countersegment`
     :return: splitter, or the segment connecting the starts
         or the ends of both segments if it lies beyond them.
     """
-    slope_diff = domain_slope - image_slope
+    slope_diff = domain_slope - countersegment_slope
     const = (2 * area_requirement
              + slope_diff * domain.end.x * countersegment.start.x
              + intercept_diff * (domain.end.x + countersegment.start.x))
     sign = (1
-            if domain.start.y > image_slope * domain.start.x
+            if domain.start.y > countersegment_slope * domain.start.x
                + countersegment_intercept
             else -1)
     tail_x = (sign
-              * fourth_root((1 + image_slope ** 2)
+              * fourth_root((1 + countersegment_slope ** 2)
                             / (1 + domain_slope ** 2)
                             * (intercept_diff ** 2 + slope_diff * const) ** 2)
               - intercept_diff) / slope_diff
@@ -620,7 +620,7 @@ def general_case_splitter(*,  # noqa: PLR0913
     tail_y = tail_x * domain_slope + domain_intercept
     head_x = ((const - tail_x * intercept_diff)
               / (tail_x * slope_diff + intercept_diff))
-    head_y = head_x * image_slope + countersegment_intercept
+    head_y = head_x * countersegment_slope + countersegment_intercept
     tail_point = Point(tail_x, tail_y)
     head_point = Point(head_x, head_y)
     return Segment(tail_point, head_point)
