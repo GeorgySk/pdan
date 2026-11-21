@@ -7,11 +7,13 @@ from pathlib import Path
 
 project_root = Path(__file__).resolve().parents[2]
 
+project_root = Path(__file__).resolve().parents[2]
+
 # tells autodoc where to find the code
 sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root))
 
-pyproject_path = project_root / "pyproject.toml"
-with pyproject_path.open("rb") as file:
+with (project_root / "pyproject.toml").open("rb") as file:
     project_data = tomllib.load(file)["project"]
 
 # -- Project information

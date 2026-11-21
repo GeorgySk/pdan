@@ -30,10 +30,13 @@ dev = [
     # fixed for easier way to reproduce across various machines
     "hypothesis==6.150.2",
     "hypothesis-geometry==8.0.0",
-    # keep in sync with the ruff-pre-commit rev in .pre-commit-config.yaml
+    # also the ruff-pre-commit rev in .pre-commit-config.yaml
     "ruff==0.17.4",
     "mypy>=2.4.1,<3.0.0",
-    "pre-commit>=4.0.0,<5.0.0"
+    "pre-commit>=4.0.0,<5.0.0",
+    # for `copier update`; the lower bound is _min_copier_version in
+    # copier.yml, and the range must admit the root poetry.lock's Copier
+    "copier>=9.10.0,<10.0.0"
 ]
 
 [tool.poetry.group.docs]
@@ -71,10 +74,9 @@ ignore = [
     # anyone familiar with Python knows, so spelling out the default only
     # adds noise. We pass `strict=True` where lengths must match.
     "B905",
-    # The MIT license only requires its copyright notice to accompany copies
-    # of the work, and the LICENSE file already does that for the whole
-    # package. Per-file copyright headers would add boilerplate without any
-    # legal benefit.
+    # The license only requires the copyright notice to accompany copies
+    # of the work, which the LICENSE file already does, so per-file
+    # copyright headers add nothing.
     "CPY001",
     # Moving third-party imports used only in annotations under
     # `if TYPE_CHECKING:` saves their import cost only if nothing else
@@ -107,12 +109,21 @@ ignore = [
     # having the message in the `raise` line makes it easy to find by grep.
     "EM101",
     "EM102",
+    # RUF001, RUF002 and RUF003 flag characters that look like ASCII ones,
+    # such as the Turkish dotless `ı`, Cyrillic letters or the en dash `–`.
+    # Such characters are legitimate in any non-English text, for example
+    # in an author's name, a docstring or a comment.
+    "RUF001",
+    "RUF002",
+    "RUF003",
     # TRY003 wants long exception messages moved into custom exception
     # classes. That only pays off when callers need to catch a specific
     # error or the same message is raised from many places. Otherwise it
     # adds a class per message and goes against the common practice of
     # raising built-in exceptions whenever their meaning fits.
     "TRY003",
+    # Unnecessary parenthesis around boolean multiplication.
+    "RUF021"
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -120,6 +131,16 @@ ignore = [
     "D100", "D103", "D104",  # tests don't need docstrings
     "S101",  # it's expected to have `assert` in tests
     "E731",  # lambdas are handy for defining simple test keys
+    # pytest passes fixtures and parametrized values as positional
+    # parameters, so boolean choices can't be keyword-only.
+    "FBT001",
+]
+# Text from the prompt answers is rendered into this file's docstring and
+# strings. A long description can't fit the docstring's one-line summary
+# (D205), and the answers may hold backslashes (D301), start with "This"
+# (D404) or contain invisible characters (PLE2502, PLE2515).
+"pdan/__init__.py" = [
+    "D205", "D301", "D404", "PLE2502", "PLE2515",
 ]
 "docs/**" = [
     "D100",  # Sphinx's `conf.py` is a config file, not a documented module
