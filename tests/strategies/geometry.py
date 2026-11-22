@@ -125,7 +125,9 @@ points_pairs = st.lists(fraction_points,
                         unique=True)
 
 
-def _reverse_maybe(contour: Contour, reverse: bool) -> Contour:  # noqa: FBT001
+def _reverse_maybe(contour: Contour,
+                   *,
+                   reverse: bool) -> Contour:
     return contour.to_clockwise() if reverse else contour
 
 
