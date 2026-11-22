@@ -133,7 +133,7 @@ def _reverse_maybe(contour: Contour,
 
 any_orientation_convex_contours = st.builds(_reverse_maybe,
                                             convex_contours,
-                                            st.booleans())
+                                            reverse=st.booleans())
 concave_contours = planar.concave_contours(fractions,
                                            max_size=MAX_CONTOUR_SIZE)
 
