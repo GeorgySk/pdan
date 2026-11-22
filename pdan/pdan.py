@@ -29,6 +29,7 @@ from gon.base import (
     Segment,
 )
 from gon.hints import Maybe
+from ground.base import get_context
 
 ROOT_PRECISION_BITS = 96
 """Relative precision of inexact roots, close to 28 decimal digits."""
@@ -96,20 +97,42 @@ def minimizing_split(contour: Contour,
     value when applied to `key` function, and returns it along with
     the remaining part as contours.
 
-    :param contour: defines a convex polygon; integer and float
+    Floats are converted to fractions exactly, so `0.1` becomes
+    `3602879701896397/36028797018963968`, the value the float actually
+    stores, and the results compare equal to the float inputs.
+    To work with exact decimal values, pass fractions instead,
+    for example `Fraction("0.1")`.
+
+    The area of the returned part always equals the area requirement
+    exactly. The splitter is the shortest one between the edges
+    it connects, but its endpoints may be irrational, for example
+    when cutting off area 3 from a 4 by 4 square. In such cases,
+    one endpoint is rounded to `ROOT_PRECISION_BITS` significant bits,
+    and the other one is placed so that the area stays exact.
+    The splitter is then optimal up to a relative error of about
+    `2 ** -(2 * ROOT_PRECISION_BITS)` in its length, and the
+    coordinates have denominators of about that many bits.
+
+    :param contour: defines a convex polygon, in either orientation,
+        without collinear consecutive vertices; integer and float
         coordinates are converted to fractions
     :param area_requirement: area of a part to return; converted
         to a fraction if given as an integer or a float
     :param key: function to be applied to a pair of contours;
         its values only need to support comparison with `<`
     :return: two contours if the area requirement is between zero
-        and area of the polygon; empty geometry and the input contour
-        if it is zero; the input contour and empty geometry if it is
-        equal to area of the polygon.
-    :raises ValueError: if the area requirement is negative
-        or exceeds area of the polygon.
+        and area of the polygon; empty geometry and a counterclockwise
+        copy of the input contour with fraction coordinates if it is
+        zero; that copy and empty geometry if it is equal to area
+        of the polygon. All returned contours are counterclockwise.
+    :raises ValueError: if the contour doesn't define a non-degenerate
+        convex polygon (see `validate_convex_contour`), or if the area
+        requirement is negative or exceeds area of the polygon.
     """
     contour = to_fraction_contour(contour)
+    validate_convex_contour(contour)
+    # the sweep in `to_partitions` assumes counterclockwise order
+    contour = contour.to_counterclockwise()
     area_requirement = Fraction(area_requirement)
     area = Polygon(contour).area
     if area_requirement < 0:
@@ -124,25 +147,49 @@ def minimizing_split(contour: Contour,
         return contour, EMPTY
     partitions = to_partitions(contour=contour,
                                area_requirement=area_requirement)
-    min_key_value: KeyValue | None = None
-    min_key_contours = None
-    for partition in partitions:
-        splitter = to_splitter(domain=partition.domain,
-                               countersegment=partition.countersegment,
-                               area_requirement=partition.area_difference)
-        right_contour, left_contour = to_right_left_contours(
-            domain=partition.domain,
-            countersegment=partition.countersegment,
-            splitter=splitter,
-            right_vertices=partition.right_vertices,
-            left_vertices=partition.left_vertices)
-        key_value = key(right_contour, left_contour)
-        if min_key_value is None or key_value < min_key_value:
-            min_key_contours = right_contour, left_contour
-            min_key_value = key_value
-    if min_key_contours is None:
-        raise ValueError("Couldn't find any split of the polygon.")
-    return min_key_contours
+    return min(map(to_split_contours, partitions),
+               key=lambda contours: key(*contours))
+
+
+def to_split_contours(partition: Partition) -> tuple[Contour, Contour]:
+    """
+    Splits the polygon at the given partition.
+
+    Finds the splitter between the domain and the countersegment
+    of the partition and builds the contours on both sides of it.
+
+    :param partition: candidate place to split the polygon
+    :return: contours of the parts to the right and to the left
+        of the splitter.
+    """
+    splitter = to_splitter(domain=partition.domain,
+                           countersegment=partition.countersegment,
+                           area_requirement=partition.area_difference)
+    return to_right_left_contours(domain=partition.domain,
+                                  countersegment=partition.countersegment,
+                                  splitter=splitter,
+                                  right_vertices=partition.right_vertices,
+                                  left_vertices=partition.left_vertices)
+
+
+def validate_convex_contour(contour: Contour) -> None:
+    """
+    Checks that the contour defines a non-degenerate convex polygon.
+
+    Uses `gon`'s own definition of a valid contour, which rules out
+    collinear consecutive vertices (including repeated ones)
+    and self-intersections, and then checks that all turns
+    are in the same direction.
+
+    :param contour: contour with fraction coordinates, in either
+        orientation
+    :raises ValueError: if the contour has fewer than three vertices,
+        three consecutive vertices on one line, self-intersections,
+        or doesn't define a convex polygon.
+    """
+    contour.validate()
+    if not get_context().is_region_convex(contour):
+        raise ValueError("Contour must define a convex polygon.")
 
 
 def to_fraction_contour(contour: Contour) -> Contour:
@@ -173,83 +220,89 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
     domain segment when iterating in counterclockwise order,
     and, finally, the area differences that should be found in the
     quadrilateral based on the domains and the countersegments.
+
+    :param contour: defines a convex polygon, with fraction coordinates
+    :param area_requirement: area of the part to the right
+        of a splitter, strictly between zero and area of the polygon
+    :return: partitions in the order of the sweep around the contour.
     """
     segments = contour.segments
     # in gon, the last segment goes first, the first one goes second, and so on
-    tails = iter([*segments[1:], segments[0]])
-    heads = iter([*segments[2:], *segments])
-    tail = next(tails)
-    accumulated_area = 0
-    right_vertices = deque([tail.start])
+    edges = iter([*segments[1:], segments[0]])
+    counteredges = iter([*segments[2:], *segments])
+    edge = next(edges)
+    accumulated_area = Fraction(0)
+    right_vertices = deque([edge.start])
     left_vertices = deque(contour.vertices[1:])
-    for head in heads:
-        right_vertices.append(head.start)
+    # `counteredges` spans more than a full turn, and the triangles fanned
+    # from `edge.start` cover the whole polygon in fewer steps,
+    # so the loop always breaks for an area requirement below its area
+    for counteredge in counteredges:
+        right_vertices.append(counteredge.start)
         left_vertices.popleft()
-        covered_triangle_area = Polygon(Contour([tail.start,
-                                                 head.start,
-                                                 head.end])).area
+        covered_triangle_area = Polygon(Contour([edge.start,
+                                                 counteredge.start,
+                                                 counteredge.end])).area
         accumulated_area += covered_triangle_area
         if accumulated_area < area_requirement:
             continue
         elif accumulated_area == area_requirement:
-            right_vertices.append(head.end)
+            right_vertices.append(counteredge.end)
             left_vertices.popleft()
-            head = next(heads)  # noqa: PLW2901
-            countervertex = head.start
-            is_head_based_on_original_vertex = True
+            counteredge = next(counteredges)  # noqa: PLW2901
+            countervertex = counteredge.start
+            is_countervertex_original = True
         else:
             area = covered_triangle_area + area_requirement - accumulated_area
             countervertex = inverse_shoelace(area=area,
-                                             endpoint=tail.start,
-                                             base_start=head.start,
-                                             base_end=head.end)
+                                             endpoint=edge.start,
+                                             base_start=counteredge.start,
+                                             base_end=counteredge.end)
             right_vertices.append(countervertex)
-            is_head_based_on_original_vertex = False
+            is_countervertex_original = False
         break
-    else:
-        raise ValueError("Couldn't find countervertex.")
-    is_tail_start_original = True
+    is_edge_start_original = True
     while True:
-        tail_based_triangle_area = Polygon(Contour([tail.start,
-                                                    tail.end,
-                                                    countervertex])).area
-        head_based_triangle_area = Polygon(Contour([tail.end,
-                                                    countervertex,
-                                                    head.end])).area
+        edge_triangle_area = Polygon(Contour([edge.start,
+                                              edge.end,
+                                              countervertex])).area
+        counteredge_triangle_area = Polygon(Contour([edge.end,
+                                                     countervertex,
+                                                     counteredge.end])).area
         right_vertices.popleft()
-        left_vertices.append(tail.start)
-        if tail_based_triangle_area == head_based_triangle_area:
-            domain = tail
-            domain_based_area = tail_based_triangle_area
-            image_end = head.end
-            tail = next(tails, None)
-            head = next(heads)
-        elif head_based_triangle_area > tail_based_triangle_area:
-            domain = tail
-            domain_based_area = tail_based_triangle_area
-            image_end = inverse_shoelace(area=tail_based_triangle_area,
-                                         endpoint=tail.end,
-                                         base_start=countervertex,
-                                         base_end=head.end)
-            left_vertices.appendleft(image_end)
-            tail = next(tails, None)
-            head = Segment(image_end, head.end)
+        left_vertices.append(edge.start)
+        if edge_triangle_area == counteredge_triangle_area:
+            domain = edge
+            domain_based_area = edge_triangle_area
+            countersegment_end = counteredge.end
+            edge = next(edges, None)
+            counteredge = next(counteredges)
+        elif counteredge_triangle_area > edge_triangle_area:
+            domain = edge
+            domain_based_area = edge_triangle_area
+            countersegment_end = inverse_shoelace(area=edge_triangle_area,
+                                                  endpoint=edge.end,
+                                                  base_start=countervertex,
+                                                  base_end=counteredge.end)
+            left_vertices.appendleft(countersegment_end)
+            edge = next(edges, None)
+            counteredge = Segment(countersegment_end, counteredge.end)
         else:
-            area_difference = (tail_based_triangle_area
-                               - head_based_triangle_area)
+            area_difference = (edge_triangle_area
+                               - counteredge_triangle_area)
             domain_end = inverse_shoelace(area=area_difference,
-                                          endpoint=head.end,
-                                          base_start=tail.end,
-                                          base_end=tail.start)
+                                          endpoint=counteredge.end,
+                                          base_start=edge.end,
+                                          base_end=edge.start)
             right_vertices.appendleft(domain_end)
-            domain = Segment(tail.start, domain_end)
+            domain = Segment(edge.start, domain_end)
             domain_based_area = Polygon(Contour([domain.start,
                                                  domain.end,
                                                  countervertex])).area
-            image_end = head.end
-            tail = Segment(domain_end, tail.end)
-            head = next(heads)
-        countersegment = Segment(countervertex, image_end)
+            countersegment_end = counteredge.end
+            edge = Segment(domain_end, edge.end)
+            counteredge = next(counteredges)
+        countersegment = Segment(countervertex, countersegment_end)
         right_vertices_list = list(right_vertices)
         resulting_right_vertices = (right_vertices_list
                                     if right_vertices_list[1:-1] else [])
@@ -261,19 +314,19 @@ def to_partitions(contour: Contour,  # noqa: PLR0915
                         right_vertices=resulting_right_vertices,
                         left_vertices=resulting_left_vertices,
                         area_difference=domain_based_area)
-        if tail is None:
+        if edge is None:
             return
-        countervertex = head.start
-        if not is_head_based_on_original_vertex:
+        countervertex = counteredge.start
+        if not is_countervertex_original:
             right_vertices.pop()
-        if not is_tail_start_original:
+        if not is_edge_start_original:
             left_vertices.pop()
         right_vertices.append(countervertex)
         left_vertices.popleft()
-        is_head_based_on_original_vertex = (head_based_triangle_area
-                                            <= tail_based_triangle_area)
-        is_tail_start_original = (head_based_triangle_area
-                                  >= tail_based_triangle_area)
+        is_countervertex_original = (counteredge_triangle_area
+                                     <= edge_triangle_area)
+        is_edge_start_original = (counteredge_triangle_area
+                                  >= edge_triangle_area)
 
 
 def to_splitter(domain: Segment,
@@ -286,6 +339,16 @@ def to_splitter(domain: Segment,
     finds another "splitter" segment connecting these two
     so that the area on the right would be
     equal to the given area requirement.
+
+    :param domain: segment of the boundary where the splitter starts
+    :param countersegment: segment of the boundary where the splitter
+        ends
+    :param area_requirement: area of the quadrilateral formed by
+        the splitter, the end of `domain` and the start
+        of `countersegment`
+    :return: splitter with the start on `domain` and the end
+        on `countersegment`; the segment connecting the starts
+        or the ends of both if the optimal splitter lies beyond them.
     """
     if (domain.start.x == domain.end.x
             and countersegment.end.x == countersegment.start.x):
@@ -324,7 +387,7 @@ def to_splitter(domain: Segment,
         domain_slope=domain_slope,
         countersegment=countersegment,
         countersegment_intercept=countersegment_intercept,
-        image_slope=countersegment_slope)
+        countersegment_slope=countersegment_slope)
 
 
 def to_right_left_contours(domain: Segment,  # noqa: PLR0912, C901
@@ -338,6 +401,19 @@ def to_right_left_contours(domain: Segment,  # noqa: PLR0912, C901
 
     The contours are built from the splitter and vertices delimiting
     right and left parts based on the splitter's endpoints location.
+
+    :param domain: segment of the boundary where the splitter starts
+    :param countersegment: segment of the boundary where the splitter
+        ends
+    :param splitter: segment connecting `domain` and `countersegment`
+    :param right_vertices: vertices going counterclockwise from
+        `domain` to `countersegment`; empty if there are none
+        between them
+    :param left_vertices: vertices going counterclockwise from
+        `countersegment` to `domain`; empty if there are none
+        between them
+    :return: contours of the parts to the right and to the left
+        of the splitter, without collinear vertices at its endpoints.
     """
     if not right_vertices:
         if splitter.start == domain.start:
@@ -386,6 +462,13 @@ def vertical_segments_splitter(area_requirement: Fraction,
     and "countersegment" segments
     so that the area on the right would be
     equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param domain: vertical segment where the splitter starts
+    :param countersegment: vertical segment where the splitter ends
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     tail_y = ((2 * area_requirement
                + countersegment.start.x * countersegment.start.y
@@ -412,27 +495,33 @@ def vertical_domain_splitter(area_requirement: Fraction,
     and an inclined "countersegment" segments
     so that the area on the right would be
     equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param domain: vertical segment where the splitter starts
+    :param countersegment: inclined segment where the splitter ends
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     slope, intercept = slope_intercept(countersegment.start,
                                        countersegment.end)
-    domain_image_intersection_y = slope * domain.end.x + intercept
+    lines_intersection_y = slope * domain.end.x + intercept
     const = (2 * area_requirement
-             - domain_image_intersection_y * countersegment.start.x
+             - lines_intersection_y * countersegment.start.x
              + domain.end.y * (countersegment.start.x - domain.end.x))
     fourth_power_tail_intersection_diff_y = (
-            (domain_image_intersection_y * domain.end.x + const) ** 2
+            (lines_intersection_y * domain.end.x + const) ** 2
             * (1 + slope ** 2))
-    sign = 1 if domain_image_intersection_y < domain.end.y else -1
+    sign = 1 if lines_intersection_y < domain.end.y else -1
     tail_intersection_diff_y = fourth_root(
         fourth_power_tail_intersection_diff_y)
-    tail_y = (Fraction(sign * tail_intersection_diff_y)
-              + domain_image_intersection_y)
+    tail_y = sign * tail_intersection_diff_y + lines_intersection_y
     if is_before_domain(tail_y, domain.start.y, domain.end.y):
         return Segment(domain.start, countersegment.start)
     if is_after_domain(tail_y, domain.start.y, domain.end.y):
         return Segment(domain.end, countersegment.end)
     head_x = ((const + domain.end.x * tail_y)
-              / (tail_y - domain_image_intersection_y))
+              / (tail_y - lines_intersection_y))
     head_y = slope * head_x + intercept
     tail_point = Point(domain.end.x, tail_y)
     head_point = Point(head_x, head_y)
@@ -449,26 +538,33 @@ def vertical_countersegment_splitter(area_requirement: Fraction,
     and a vertical "countersegment" segments
     so that the area on the right would be
     equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param domain: inclined segment where the splitter starts
+    :param countersegment: vertical segment where the splitter ends
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     slope, intercept = slope_intercept(domain.start, domain.end)
     const = (2 * area_requirement
              + slope * domain.end.x * countersegment.start.x
              + intercept * domain.end.x - countersegment.start.y * domain.end.x
              + countersegment.start.x * countersegment.start.y)
-    domain_image_intersection_y = slope * countersegment.start.x + intercept
+    lines_intersection_y = slope * countersegment.start.x + intercept
     fourth_power_tail_intersection_diff_x = (
-            (const - domain_image_intersection_y * countersegment.start.x) ** 2
+            (const - lines_intersection_y * countersegment.start.x) ** 2
             / (1 + slope ** 2))
     sign = 1 if domain.start.x > countersegment.end.x else -1
     tail_intersection_diff_x = fourth_root(
         fourth_power_tail_intersection_diff_x)
-    tail_x = Fraction(countersegment.start.x + sign * tail_intersection_diff_x)
+    tail_x = countersegment.start.x + sign * tail_intersection_diff_x
     if is_before_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.start, countersegment.start)
     if is_after_domain(tail_x, domain.start.x, domain.end.x):
         return Segment(domain.end, countersegment.end)
     tail_y = tail_x * slope + intercept
-    head_y = ((const - tail_x * domain_image_intersection_y)
+    head_y = ((const - tail_x * lines_intersection_y)
               / (countersegment.start.x - tail_x))
     tail_point = Point(tail_x, tail_y)
     head_point = Point(countersegment.start.x, head_y)
@@ -489,6 +585,20 @@ def parallel_inclined_segments_splitter(*,  # noqa: PLR0913
     Finds segment connecting parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
     would be equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param intercept_diff: `domain_intercept` minus
+        `countersegment_intercept`
+    :param domain: inclined segment where the splitter starts
+    :param domain_intercept: intercept of the line through `domain`
+    :param countersegment: inclined segment where the splitter ends,
+        parallel to `domain`
+    :param countersegment_intercept: intercept of the line through
+        `countersegment`
+    :param slope: common slope of `domain` and `countersegment`
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
     tail_x = (area_requirement / intercept_diff
               + (domain.end.x + countersegment.start.x) / 2
@@ -514,24 +624,38 @@ def general_case_splitter(*,  # noqa: PLR0913
                           domain_slope: Fraction,
                           countersegment: Segment,
                           countersegment_intercept: Fraction,
-                          image_slope: Fraction) -> Segment:
+                          countersegment_slope: Fraction) -> Segment:
     """
     Finds splitter for non-parallel inclined domain and countersegment.
 
     Finds segment connecting non-parallel and non-vertical "domain"
     and "countersegment" segments so that the area on the right
     would be equal to the area requirement.
+
+    :param area_requirement: area to the right of the splitter
+        between `domain` and `countersegment`
+    :param intercept_diff: `domain_intercept` minus
+        `countersegment_intercept`
+    :param domain: inclined segment where the splitter starts
+    :param domain_intercept: intercept of the line through `domain`
+    :param domain_slope: slope of the line through `domain`
+    :param countersegment: inclined segment where the splitter ends
+    :param countersegment_intercept: intercept of the line through
+        `countersegment`
+    :param countersegment_slope: slope of the line through `countersegment`
+    :return: splitter, or the segment connecting the starts
+        or the ends of both segments if it lies beyond them.
     """
-    slope_diff = domain_slope - image_slope
+    slope_diff = domain_slope - countersegment_slope
     const = (2 * area_requirement
              + slope_diff * domain.end.x * countersegment.start.x
              + intercept_diff * (domain.end.x + countersegment.start.x))
     sign = (1
-            if domain.start.y > image_slope * domain.start.x
+            if domain.start.y > countersegment_slope * domain.start.x
                + countersegment_intercept
             else -1)
     tail_x = (sign
-              * fourth_root((1 + image_slope ** 2)
+              * fourth_root((1 + countersegment_slope ** 2)
                             / (1 + domain_slope ** 2)
                             * (intercept_diff ** 2 + slope_diff * const) ** 2)
               - intercept_diff) / slope_diff
@@ -542,7 +666,7 @@ def general_case_splitter(*,  # noqa: PLR0913
     tail_y = tail_x * domain_slope + domain_intercept
     head_x = ((const - tail_x * intercept_diff)
               / (tail_x * slope_diff + intercept_diff))
-    head_y = head_x * image_slope + countersegment_intercept
+    head_y = head_x * countersegment_slope + countersegment_intercept
     tail_point = Point(tail_x, tail_y)
     head_point = Point(head_x, head_y)
     return Segment(tail_point, head_point)
@@ -556,6 +680,12 @@ def is_before_domain(value: Fraction,
 
     Checks if X or Y coordinate of the segment's tail
     was found before the starting vertex of the "domain".
+
+    :param value: coordinate of the splitter's tail
+    :param start: same coordinate of the start of the domain
+    :param end: same coordinate of the end of the domain
+    :return: whether `value` coincides with `start` or lies
+        on the opposite side of it from `end`.
     """
     return value <= start < end or value >= start > end
 
@@ -568,86 +698,57 @@ def is_after_domain(value: Fraction,
 
     Checks if X or Y coordinate of the segment's tail
     was found after the second vertex of the "domain".
+
+    :param value: coordinate of the splitter's tail
+    :param start: same coordinate of the start of the domain
+    :param end: same coordinate of the end of the domain
+    :return: whether `value` coincides with `end` or lies
+        on the opposite side of it from `start`.
     """
     return value >= end > start or value <= end < start
-
-
-def robust_sqrt(fraction: Fraction) -> Fraction:
-    """
-    Returns square root of the given fraction.
-
-    The result is exact if the numerator and the denominator
-    are perfect squares. Otherwise it is rounded down to a multiple
-    of a power of two so that it has at least `ROOT_PRECISION_BITS`
-    significant bits. The result does not depend on any global state.
-
-    :param fraction: non-negative number to take square root of
-    :return: square root of the fraction.
-    """
-    return _integer_root(fraction, 2)
 
 
 def fourth_root(fraction: Fraction) -> Fraction:
     """
     Returns fourth root of the given fraction.
 
-    The result is exact if the numerator and the denominator
-    are perfect fourth powers. Otherwise it is rounded down once
-    (not once per square root) to a multiple of a power of two
-    so that it has at least `ROOT_PRECISION_BITS` significant bits.
+    Uses only integer arithmetic, so the result does not depend
+    on any global state. The result is exact if the numerator
+    and the denominator are perfect fourth powers. Otherwise it is
+    rounded down once (not once per square root) to a multiple
+    of a power of two so that it has at least `ROOT_PRECISION_BITS`
+    significant bits.
 
     :param fraction: non-negative number to take fourth root of
     :return: fourth root of the fraction.
-    """
-    return _integer_root(fraction, 4)
-
-
-def _integer_root(fraction: Fraction,
-                  degree: int) -> Fraction:
-    """
-    Returns root of the given fraction of degree two or four.
-
-    Uses only integer arithmetic. For a non-negative integer `m`,
-    `isqrt(isqrt(m))` equals the floor of the fourth root of `m`,
-    so the fourth root is rounded down only once.
-
-    :param fraction: non-negative number to take root of
-    :param degree: degree of the root, either 2 or 4
-    :return: exact root if both the numerator and the denominator
-        are perfect powers of `degree`, the root rounded down
-        to a multiple of a power of two otherwise.
     :raises ValueError: if the fraction is negative.
     """
     numerator, denominator = fraction.numerator, fraction.denominator
     if numerator < 0:
         raise ValueError(f"Cannot take root of negative number: {fraction}")
-    numerator_root = _floor_root(numerator, degree)
-    denominator_root = _floor_root(denominator, degree)
-    if (numerator_root ** degree == numerator
-            and denominator_root ** degree == denominator):
+    numerator_root = floor_fourth_root(numerator)
+    denominator_root = floor_fourth_root(denominator)
+    if (numerator_root ** 4 == numerator
+            and denominator_root ** 4 == denominator):
         return Fraction(numerator_root, denominator_root)
     shift = max(0, ROOT_PRECISION_BITS
-                - (numerator.bit_length() - denominator.bit_length())
-                // degree)
-    scaled = (numerator << degree * shift) // denominator
-    return Fraction(_floor_root(scaled, degree), 1 << shift)
+                - (numerator.bit_length() - denominator.bit_length()) // 4)
+    scaled = (numerator << 4 * shift) // denominator
+    return Fraction(floor_fourth_root(scaled), 1 << shift)
 
 
-def _floor_root(value: int,
-                degree: int) -> int:
+def floor_fourth_root(value: int) -> int:
     """
-    Returns root of a non-negative integer rounded down.
+    Returns fourth root of a non-negative integer rounded down.
 
-    :param value: non-negative integer to take root of
-    :param degree: degree of the root, a power of two
-    :return: the largest integer whose power of `degree`
-        does not exceed `value`.
+    For a non-negative integer `m`, `isqrt(isqrt(m))` equals the floor
+    of the fourth root of `m`, so the result is rounded down only once.
+
+    :param value: non-negative integer to take fourth root of
+    :return: the largest integer whose fourth power does not exceed
+        `value`.
     """
-    root = value
-    while degree > 1:
-        root = isqrt(root)
-        degree //= 2
-    return root
+    return isqrt(isqrt(value))
 
 
 def inverse_shoelace(area: Fraction,
@@ -657,11 +758,20 @@ def inverse_shoelace(area: Fraction,
     """
     Finds point in triangle based on inverse shoelace algorithm.
 
-    Coordinates of the points must be of `Fraction` type.
+    Finds the point on the line through `base_start` and `base_end`
+    such that the triangle formed by `endpoint`, `base_start`
+    and that point has the given area. Coordinates of the points
+    must be of `Fraction` type.
+
+    :param area: area of the triangle to form
+    :param endpoint: vertex of the triangle opposite to its base
+    :param base_start: vertex of the triangle where its base starts
+    :param base_end: point that sets the direction of the base
+    :return: vertex of the triangle where its base ends.
     """
     orientation = Contour([endpoint, base_start, base_end]).orientation
     sign = 1 if orientation is Orientation.COUNTERCLOCKWISE else -1
-    if base_end.x - base_start.x == 0:
+    if base_end.x == base_start.x:
         numerator = 2 * area + sign * (base_start.x * base_start.y
                                        - endpoint.x * base_start.y)
         denominator = sign * (base_start.x - endpoint.x)

@@ -64,6 +64,25 @@ True
 
 ```
 
+All computations are exact. Integer and float inputs are converted
+to `Fraction`s, floats to the exact binary value they store:
+`0.1` becomes `3602879701896397/36028797018963968`, not `1/10`.
+To work with exact decimal values, pass `Fraction`s, for example
+`Fraction("0.1")`:
+
+```python
+>>> part, _ = minimizing_split(contour, 0.1, key=lambda x, y: x.length)
+>>> Polygon(part).area == 0.1
+True
+>>> Polygon(part).area == Fraction(1, 10)
+False
+>>> part, _ = minimizing_split(contour, Fraction("0.1"),
+...                           key=lambda x, y: x.length)
+>>> Polygon(part).area == Fraction(1, 10)
+True
+
+```
+
 Development
 -----------
 
@@ -108,16 +127,58 @@ bump-my-version bump --verbose release
 
 This will set version to `major.minor.patch`.
 
+### Continuous integration
+
+To save CI minutes, the checks (linting, tests, docs and package build) don't
+run on every push:
+
+- Pull requests: every check, with the tests on the oldest and newest
+  supported Python. Draft pull requests run nothing, so open a pull request
+  as a draft while working on it and mark it ready for review to run CI.
+  On GitHub, a new push cancels the run for the previous one.
+- The default branch: only the tests on the oldest Python, for the coverage
+  report and the badges. The merged changes were checked in their pull
+  request.
+- Final release tags `vX.Y.Z`: every check, with the tests on every supported
+  Python, then publishing (see below). Pre-release tags `vX.Y.Z-alpha` run
+  nothing.
+
+Every job has a timeout, so a hanging test can't use up the minutes.
+Dependabot opens its pull requests monthly, one per ecosystem (major
+updates of Python dependencies apart).
+
+Since a merge is followed by only some of the tests, don't merge a pull
+request unless its last commit passed CI.
+On GitHub, enforce this with a ruleset (Settings → Rules → Rulesets → New
+branch ruleset) that targets the default branch and has "Require status
+checks to pass" with the `ci-passed` check, the job that passes only when
+every other check did. Leave "Require branches to be up to date before
+merging" off: it reruns CI every time the default branch moves. Rulesets
+are available for public repositories on every plan, but for private ones
+only on paid plans (GitHub Pro, Team or Enterprise).
+
 ### Publishing
 
 Pushing a final release tag `vX.Y.Z` runs the CI publish jobs, which upload
 the package to PyPI and push
 the `prod` Docker image to the GitHub container registry (GHCR).
 Pre-release tags such as `vX.Y.Z-alpha` are not published.
+Alongside them, once the checks pass, the `release` job creates a GitHub release
+for the tag, with the version's section of `CHANGES.rst` as its notes, so
+add the changelog entries before bumping. It doesn't wait for the publish
+jobs: if one fails, fix the cause and re-run that job (not the whole
+pipeline, since a version can be uploaded to PyPI only once).
 
+Release from the default branch once the changes are merged, so that what is
+published has been reviewed and tested.
 `bump-my-version bump release` commits and tags the release, so push both:
 ```bash
 git push --follow-tags
+```
+A plain `git push` doesn't push tags. To make it push the tags of the commits
+it pushes, run once
+```bash
+git config --global push.followTags true
 ```
 
 One-time setup:
@@ -193,8 +254,11 @@ This project was generated from the
 To pull in a newer release of the template (CI, tooling and configuration
 fixes), commit your changes, then run
 ```bash
-copier update --defaults
+poetry run copier update --defaults
 ```
+Copier is in the `dev` dependency group, so there is nothing else to install
+(in an environment where Poetry installs into the active Python, such as the
+dev container, plain `copier update --defaults` works too).
 Copier merges the template's changes into the project and keeps yours.
 Review them with `git diff`, resolve any conflict markers and commit.
 `CHANGES.rst` and `pdan/__init__.py` are never touched by

@@ -6,6 +6,12 @@ settings.register_profile(
     deadline=None,
     suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
 )
+# run weekly in CI, takes several minutes
+settings.register_profile(
+    "thorough",
+    parent=settings.get_profile("default"),
+    max_examples=1000,
+)
 
 
 @pytest.hookimpl(trylast=True)

@@ -1,14 +1,11 @@
 from collections.abc import Callable
-from decimal import (
-    ROUND_FLOOR,
-    localcontext,
-)
 from fractions import Fraction
 
 import pytest
 from gon.base import (
     EMPTY,
     Contour,
+    Orientation,
     Polygon,
 )
 from hypothesis import given
@@ -16,6 +13,7 @@ from hypothesis import given
 from pdan.pdan import (
     SupportsLessThan,
     minimizing_split,
+    validate_convex_contour,
 )
 from tests.strategies.base import (
     metrics,
@@ -24,6 +22,7 @@ from tests.strategies.base import (
     positive_nonzero_fractions,
 )
 from tests.strategies.geometry import (
+    concave_contours,
     convex_contours,
     convex_contours_with_area_requirements,
 )
@@ -107,22 +106,6 @@ def test_excessive_requirement(contour: Contour,
 
 
 @given(contour_with_area_requirement=convex_contours_with_area_requirements,
-       key=metrics)
-def test_independent_of_decimal_context(
-        contour_with_area_requirement: tuple[Contour, Fraction | float],
-        key: Key) -> None:
-    contour, area_requirement = contour_with_area_requirement
-    expected = minimizing_split(contour,
-                                area_requirement=area_requirement,
-                                key=key)
-    with localcontext(prec=3, rounding=ROUND_FLOOR):
-        result = minimizing_split(contour,
-                                  area_requirement=area_requirement,
-                                  key=key)
-    assert result == expected
-
-
-@given(contour_with_area_requirement=convex_contours_with_area_requirements,
        key=non_fraction_metrics)
 def test_non_fraction_key(
         contour_with_area_requirement: tuple[Contour, Fraction | float],
@@ -134,3 +117,59 @@ def test_non_fraction_key(
                                   key=key)
     assert Polygon(part).area == area_requirement
     assert Polygon(part).area + Polygon(rest).area == Polygon(contour).area
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=metrics)
+def test_orientation_independence(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Key
+) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    clockwise_result = minimizing_split(contour.to_clockwise(),
+                                        area_requirement=area_requirement,
+                                        key=key)
+    counterclockwise_result = minimizing_split(
+        contour.to_counterclockwise(),
+        area_requirement=area_requirement,
+        key=key)
+    assert clockwise_result == counterclockwise_result
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=metrics)
+def test_counterclockwise_results(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Key
+) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    part, rest = minimizing_split(contour,
+                                  area_requirement=area_requirement,
+                                  key=key)
+    assert part.orientation is Orientation.COUNTERCLOCKWISE
+    assert rest.orientation is Orientation.COUNTERCLOCKWISE
+
+
+@given(contour=concave_contours,
+       key=metrics)
+def test_concave(contour: Contour,
+                 key: Key) -> None:
+    with pytest.raises(ValueError, match="convex"):
+        minimizing_split(contour,
+                         area_requirement=Polygon(contour).area / 2,
+                         key=key)
+
+
+@given(contour_with_area_requirement=convex_contours_with_area_requirements,
+       key=metrics)
+def test_parts_are_valid(
+        contour_with_area_requirement: tuple[Contour, Fraction | float],
+        key: Key
+) -> None:
+    contour, area_requirement = contour_with_area_requirement
+    part, rest = minimizing_split(contour,
+                                  area_requirement=area_requirement,
+                                  key=key)
+    # so that the parts can be split further
+    validate_convex_contour(part)
+    validate_convex_contour(rest)

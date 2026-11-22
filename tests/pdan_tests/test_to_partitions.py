@@ -20,7 +20,7 @@ from tests.strategies.geometry import convex_contours
 
 @given(contour=convex_contours,
        unit_fraction=open_interval_unit_fractions)
-def test_domains_and_images_disjoint(contour: Contour,
+def test_domains_and_countersegments_disjoint(contour: Contour,
                                      unit_fraction: Fraction) -> None:
     area_requirement = unit_fraction * Polygon(contour).area
     partitions = to_partitions(contour, area_requirement)
