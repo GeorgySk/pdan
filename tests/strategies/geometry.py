@@ -10,12 +10,17 @@ from gon.base import (
 from hypothesis import strategies as st
 from hypothesis_geometry import planar
 
-from pdan.pdan import slope_intercept
+from pdan.pdan import (
+    minimizing_split,
+    slope_intercept,
+)
 from tests.config import MAX_CONTOUR_SIZE
 from tests.pdan_tests.utils import find_vertical_countersegment_end
 from tests.strategies.base import (
     coordinates,
+    fraction_requirements,
     fractions,
+    metrics,
     open_interval_unit_fractions,
 )
 
@@ -190,3 +195,100 @@ def to_contours_with_collinear_vertex(
 
 
 contours_with_collinear_vertex = to_contours_with_collinear_vertex()
+
+
+@st.composite
+def to_convex_contours_with_area_requirements_lists(
+        draw: st.DrawFn) -> tuple[Contour, list[Fraction]]:
+    contour = draw(any_coordinates_convex_contours)
+    if draw(st.booleans()):
+        contour = contour.to_clockwise()
+    area = Polygon(contour).area
+    shares = draw(fraction_requirements)
+    if draw(st.booleans()):
+        # equal requirements must keep their order
+        shares = [shares[0], *shares]
+        shares = [share / sum(shares) for share in shares]
+    requirements = [share * area for share in shares]
+    zeros_count = draw(st.integers(0, 2))
+    for _ in range(zeros_count):
+        index = draw(st.integers(0, len(requirements)))
+        requirements.insert(index, Fraction(0))
+    return contour, requirements
+
+
+convex_contours_with_area_requirements_lists = (
+    to_convex_contours_with_area_requirements_lists())
+
+
+MAX_SPLIT_PRECISION_BITS = 128
+split_precisions = st.integers(1, MAX_SPLIT_PRECISION_BITS)
+ccw_convex_contours = convex_contours.map(Contour.to_counterclockwise)
+
+
+def _interpolate(start: Point, end: Point, position: Fraction) -> Point:
+    return Point(start.x + position * (end.x - start.x),
+                 start.y + position * (end.y - start.y))
+
+
+@st.composite
+def to_contours_with_indices(draw: st.DrawFn) -> tuple[Contour, int]:
+    contour = draw(ccw_convex_contours)
+    return contour, draw(st.integers(0, len(contour.vertices) - 1))
+
+
+contours_with_indices = to_contours_with_indices()
+
+
+@st.composite
+def to_contours_with_edge_points(
+        draw: st.DrawFn) -> tuple[Contour, Segment, Point]:
+    contour, index = draw(contours_with_indices)
+    vertices = contour.vertices
+    edge = Segment(vertices[index], vertices[(index + 1) % len(vertices)])
+    position = draw(open_interval_unit_fractions)
+    return contour, edge, _interpolate(edge.start, edge.end, position)
+
+
+contours_with_edge_points = to_contours_with_edge_points()
+
+
+@st.composite
+def to_splits(draw: st.DrawFn) -> tuple[Contour, Contour, Contour]:
+    contour = draw(ccw_convex_contours)
+    area_requirement = (draw(open_interval_unit_fractions)
+                        * Polygon(contour).area)
+    part, rest = minimizing_split(contour, area_requirement,
+                                  key=draw(metrics))
+    return contour, part, rest
+
+
+splits = to_splits()
+
+
+@st.composite
+def to_collapsing_splits(
+        draw: st.DrawFn) -> tuple[Contour, Contour, Contour, int]:
+    # cuts off a corner so close to its vertex that rounding
+    # moves both splitter endpoints onto the vertex
+    contour, index = draw(contours_with_indices)
+    vertices = contour.vertices
+    size = len(vertices)
+    previous = vertices[index - 1]
+    vertex = vertices[index]
+    next_ = vertices[(index + 1) % size]
+    precision_bits = draw(split_precisions)
+    step = Fraction(1, 1 << precision_bits)
+    before = _interpolate(previous, vertex,
+                          1 - draw(open_interval_unit_fractions) * step)
+    after = _interpolate(vertex, next_,
+                         draw(open_interval_unit_fractions) * step)
+    part = Contour([before, vertex, after])
+    rest = Contour([after,
+                    *[vertices[(index + offset) % size]
+                      for offset in range(1, size)],
+                    before])
+    return contour, part, rest, precision_bits
+
+
+collapsing_splits = to_collapsing_splits()

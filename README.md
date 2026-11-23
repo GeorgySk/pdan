@@ -12,10 +12,18 @@ pdan
 Summary
 -------
 
-`pdan` is a Python library that implements the algorithm of 
+`pdan` is a Python library that implements the algorithm of
 [Skorobogatov, G. et al., 2021](https://ieeexplore.ieee.org/abstract/document/9646907)
-for convex polygon decomposition into separate parts depending on the area 
-requirements.
+for dividing a convex polygon into parts with given areas, for example
+to divide a workspace among several robots.
+
+- `minimizing_split` cuts off one part with a given area, choosing the cut
+  that minimizes a user-supplied `key` function, such as the perimeter
+  of the part.
+- `minimizing_decomposition` divides the polygon into any number of parts
+  by cutting them off one at a time, from the largest area to the smallest.
+
+Arithmetic is exact, and all parts are convex.
 
 ---
 
@@ -80,6 +88,56 @@ False
 ...                           key=lambda x, y: x.length)
 >>> Polygon(part).area == Fraction(1, 10)
 True
+
+```
+
+`minimizing_split` returns the part with the requested area first and the
+rest of the polygon second, both counterclockwise. `key` receives them in the
+same order, and its values only need to support comparison with `<`.
+An area requirement of zero gives empty geometry and the polygon,
+one equal to the area of the polygon gives the polygon and empty geometry.
+A negative requirement, one larger than the area of the polygon,
+or a contour that doesn't define a convex polygon raise `ValueError`.
+
+`key` chooses among the splits that are shortest between each pair of edges
+of the polygon, so it is meant for perimeter-like functions:
+other functions may not reach their minimum over all possible splits.
+
+### Decomposition into multiple parts
+
+`minimizing_decomposition` returns one part per area requirement, in the same
+order, with empty geometry for zero requirements. The requirements must sum
+exactly to the area of the polygon.
+
+Each cut depends on the previous ones, so exact coordinates grow exponentially
+with the number of parts. By default, the ends of each cut are therefore
+rounded to 96 bits along their edges: the parts still cover the polygon
+exactly, but their areas may differ from the requirements by a tiny amount
+(at most `2 ** (1 - precision_bits)` times the squared diameter of the
+polygon). Pass `precision_bits=None` for exact areas, which is practical only
+for a few parts.
+
+Exact perimeters (`Contour.length`) get slow to compare as the parts gain
+vertices, so use a float key such as:
+
+```python
+>>> from math import hypot
+>>> from pdan import minimizing_decomposition
+>>> def perimeter(part, _rest):
+...     return sum(hypot(segment.end.x - segment.start.x,
+...                      segment.end.y - segment.start.y)
+...                for segment in part.segments)
+>>> requirements = [Fraction(1, 6), Fraction(1, 2), Fraction(1, 3)]
+>>> parts = minimizing_decomposition(contour, requirements, key=perimeter,
+...                                  precision_bits=None)
+>>> [Polygon(part).area for part in parts] == requirements
+True
+>>> parts = minimizing_decomposition(contour, requirements, key=perimeter)
+>>> all(abs(Polygon(part).area - requirement) < Fraction(1, 2 ** 90)
+...     for part, requirement in zip(parts, requirements))
+True
+>>> sum(Polygon(part).area for part in parts)
+Fraction(1, 1)
 
 ```
 

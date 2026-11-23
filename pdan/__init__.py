@@ -11,12 +11,16 @@ from gon.base import (
     Segment,
 )
 
-from .pdan import minimizing_split
+from .pdan import (
+    minimizing_decomposition,
+    minimizing_split,
+)
 
 __all__ = [
     "Contour",
     "Point",
     "Polygon",
     "Segment",
+    "minimizing_decomposition",
     "minimizing_split",
 ]

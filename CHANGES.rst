@@ -8,6 +8,16 @@ and this project adheres to `Semantic Versioning <https://semver.org/>`_.
 Unreleased
 ----------
 
+Added
+~~~~~
+
+- ``minimizing_decomposition`` divides a convex polygon into any number
+  of parts with given areas, cutting them off one at a time from the largest
+  area to the smallest. By default, the ends of each cut are rounded
+  to ``precision_bits=96`` bits along their edges, which keeps the sizes
+  of the coordinates growing linearly with the number of parts instead
+  of exponentially; ``precision_bits=None`` keeps the areas exact.
+
 0.2.5 (2026-11-23)
 ------------------------------
 

@@ -5,7 +5,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from pdan.pdan import (
-    ROOT_PRECISION_BITS,
+    PRECISION_BITS,
     fourth_root,
 )
 
@@ -34,7 +34,7 @@ def test_bounds(fraction: Fraction) -> None:
 
 @given(non_negative_fractions.filter(bool))
 def test_relative_precision(fraction: Fraction) -> None:
-    lower_factor = 1 - Fraction(1, 2 ** (ROOT_PRECISION_BITS - 1))
+    lower_factor = 1 - Fraction(1, 2 ** (PRECISION_BITS - 1))
     assert fraction < (fourth_root(fraction) / lower_factor) ** 4
 
 
