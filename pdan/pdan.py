@@ -1,19 +1,26 @@
 """
-Splits convex polygons into two parts with a given area.
+Splits convex polygons into parts with given areas.
 
 Implements the algorithm of Skorobogatov et al., 2021, which finds
 among all splits of a convex polygon that cut off a part with
-the given area the one that minimizes a user-supplied `key` function.
+the given area the one that minimizes a user-supplied `key` function,
+and decomposes a polygon into any number of parts by repeating
+such splits.
 """
 
 from collections import deque
 from collections.abc import (
     Callable,
     Iterator,
+    Sequence,
 )
 from dataclasses import dataclass
 from fractions import Fraction
-from math import isqrt
+from math import (
+    ceil,
+    floor,
+    isqrt,
+)
 from typing import (
     Protocol,
     Self,
@@ -31,8 +38,14 @@ from gon.base import (
 from gon.hints import Maybe
 from ground.base import get_context
 
-ROOT_PRECISION_BITS = 96
-"""Relative precision of inexact roots, close to 28 decimal digits."""
+PRECISION_BITS = 96
+"""
+Precision of inexact splitter endpoints, close to 28 decimal digits.
+
+Number of significant bits of inexact roots in `minimizing_split`,
+and the default number of bits that `minimizing_decomposition` rounds
+the positions of splitter endpoints along their edges to.
+"""
 
 
 class SupportsLessThan(Protocol):
@@ -107,10 +120,10 @@ def minimizing_split(contour: Contour,
     exactly. The splitter is the shortest one between the edges
     it connects, but its endpoints may be irrational, for example
     when cutting off area 3 from a 4 by 4 square. In such cases,
-    one endpoint is rounded to `ROOT_PRECISION_BITS` significant bits,
+    one endpoint is rounded to `PRECISION_BITS` significant bits,
     and the other one is placed so that the area stays exact.
     The splitter is then optimal up to a relative error of about
-    `2 ** -(2 * ROOT_PRECISION_BITS)` in its length, and the
+    `2 ** -(2 * PRECISION_BITS)` in its length, and the
     coordinates have denominators of about that many bits.
 
     :param contour: defines a convex polygon, in either orientation,
@@ -149,6 +162,217 @@ def minimizing_split(contour: Contour,
                                area_requirement=area_requirement)
     return min(map(to_split_contours, partitions),
                key=lambda contours: key(*contours))
+
+
+def minimizing_decomposition(contour: Contour,
+                             area_requirements: Sequence[Fraction | float],
+                             *,
+                             key: Callable[[Contour, Contour], KeyValue],
+                             precision_bits: int | None = PRECISION_BITS
+                             ) -> list[Maybe[Contour]]:
+    """
+    Splits convex polygon into parts with the given areas.
+
+    Cuts the parts off the polygon one at a time, from the largest
+    area requirement to the smallest, each with `minimizing_split`
+    applied to what is left of the polygon. The last part is what
+    remains after all the other ones are cut off. Following
+    Skorobogatov et al., 2021, this order gives more compact parts
+    than going from the smallest requirement to the largest; equal
+    requirements are cut off in the order they are given. `key`
+    is minimized at each cut separately, so the decomposition
+    as a whole is not guaranteed to minimize it.
+
+    Each cut is computed exactly, but every new vertex depends
+    on the vertices of the previous cuts, so with exact arithmetic
+    the sizes of the coordinates grow exponentially with the number
+    of cuts. With `precision_bits` set, each splitter endpoint is moved
+    along its edge to the nearest multiple of `2 ** -precision_bits`
+    of the edge towards the part being cut off, which keeps the sizes
+    of the coordinates growing only linearly. The parts still cover
+    the polygon exactly, but the area of each part may differ from its
+    requirement by at most `2 ** (1 - precision_bits) * d ** 2`,
+    where `d` is the diameter of the polygon. The errors don't
+    accumulate, since each cut makes up for the area lost
+    by the previous one. A cut whose rounding would give an invalid
+    part, which may happen for parts close to `d ** 2` times that
+    precision, is left exact.
+
+    Area requirements must sum exactly to the area of the polygon.
+    Floats are converted to fractions exactly (see `minimizing_split`),
+    so float requirements such as `[0.1, 0.2, 0.7]` usually don't sum
+    to the exact area; pass fractions instead.
+
+    :param contour: defines a convex polygon, in either orientation,
+        without collinear consecutive vertices; integer and float
+        coordinates are converted to fractions
+    :param area_requirements: areas of the parts to return; converted
+        to fractions if given as integers or floats
+    :param key: function to be applied at each cut to the part being
+        cut off and the rest of the polygon; its values only need
+        to support comparison with `<`
+    :param precision_bits: number of bits to round the positions
+        of splitter endpoints along their edges to; `None` keeps them
+        exact, which is practical only for a few parts
+    :return: one part per area requirement, in the same order;
+        empty geometry for zero requirements. All returned contours
+        are counterclockwise and convex.
+    :raises ValueError: if the contour doesn't define a non-degenerate
+        convex polygon (see `validate_convex_contour`), if any area
+        requirement is negative, if the requirements don't sum
+        to area of the polygon, or if `precision_bits` is not positive.
+    """
+    if precision_bits is not None and precision_bits < 1:
+        raise ValueError("Precision must be positive, "
+                         f"but got {precision_bits} bits.")
+    contour = to_fraction_contour(contour)
+    validate_convex_contour(contour)
+    contour = contour.to_counterclockwise()
+    requirements = [Fraction(requirement)
+                    for requirement in area_requirements]
+    for requirement in requirements:
+        if requirement < 0:
+            raise ValueError("Area requirements must not be negative, "
+                             f"but got {requirement}.")
+    area = Polygon(contour).area
+    total = sum(requirements, start=Fraction(0))
+    if total != area:
+        raise ValueError(f"Area requirements sum to {total}, "
+                         f"but area of the polygon is {area}.")
+    # `sorted` is stable, so equal requirements keep their order
+    order = sorted(range(len(requirements)),
+                   key=requirements.__getitem__,
+                   reverse=True)
+    positive_order = [index for index in order if requirements[index] > 0]
+    parts: list[Maybe[Contour]] = [EMPTY] * len(requirements)
+    rest = contour
+    remaining = area
+    for index in positive_order[:-1]:
+        remaining -= requirements[index]
+        # rounding only shrinks the parts, so this is never less
+        # than the requirement, and makes up for the area lost before
+        area_to_cut = Polygon(rest).area - remaining
+        part, new_rest = minimizing_split(rest, area_to_cut, key=key)
+        if precision_bits is not None:
+            part, new_rest = round_split(rest, part, new_rest,
+                                         precision_bits=precision_bits)
+        parts[index], rest = part, new_rest
+    parts[positive_order[-1]] = rest
+    return parts
+
+
+def round_split(contour: Contour,
+                part: Contour,
+                rest: Contour,
+                *,
+                precision_bits: int) -> tuple[Contour, Contour]:
+    """
+    Rounds the endpoints of the splitter between two parts.
+
+    Moves each splitter endpoint that is not a vertex of the split
+    contour along the edge it lies on to the nearest multiple
+    of `2 ** -precision_bits` of the edge towards `part`, so that
+    the rounded part is a subset of the original one. Leaves the split
+    as it is if the rounded parts are not valid convex contours.
+
+    :param contour: counterclockwise contour that was split
+    :param part: counterclockwise contour of the part cut off
+    :param rest: counterclockwise contour of the remaining part
+    :param precision_bits: number of bits to round the positions
+        of the endpoints along their edges to
+    :return: contours of the rounded part and the rounded rest.
+    """
+    vertices = set(contour.vertices)
+    part_vertices = set(part.vertices)
+    replacements = {}
+    for endpoint in part.vertices:
+        if endpoint in vertices:
+            continue
+        edge = find_edge(contour, endpoint)
+        replacements[endpoint] = round_on_edge(
+            endpoint, edge,
+            towards_end=edge.end in part_vertices,
+            precision_bits=precision_bits)
+    rounded_part = replace_vertices(part, replacements)
+    rounded_rest = replace_vertices(rest, replacements)
+    try:
+        validate_convex_contour(rounded_part)
+        validate_convex_contour(rounded_rest)
+    except ValueError:
+        return part, rest
+    return rounded_part, rounded_rest
+
+
+def find_edge(contour: Contour,
+              point: Point) -> Segment:
+    """
+    Finds the edge of the contour that the point lies on.
+
+    :param contour: counterclockwise contour
+    :param point: point on the boundary of the contour,
+        other than its vertices
+    :return: edge directed counterclockwise, from `start` to `end`.
+    """
+    vertices = contour.vertices
+    for index, start in enumerate(vertices):
+        edge = Segment(start, vertices[(index + 1) % len(vertices)])
+        if point in edge:
+            return edge
+    raise ValueError(f"Point {point} doesn't lie on the contour.")
+
+
+def round_on_edge(point: Point,
+                  edge: Segment,
+                  *,
+                  towards_end: bool,
+                  precision_bits: int) -> Point:
+    """
+    Rounds the position of a point along the edge it lies on.
+
+    Represents the point as `start + t * (end - start)` and rounds `t`
+    to a multiple of `2 ** -precision_bits`, so that the coordinates
+    of the result have denominators of at most `precision_bits` bits
+    more than the ones of the edge endpoints.
+
+    :param point: point on the edge
+    :param edge: edge directed from `start` to `end`
+    :param towards_end: whether to round towards the end of `edge`
+        rather than towards its start
+    :param precision_bits: number of bits to round `t` to
+    :return: rounded point on the edge.
+    """
+    start, end = edge.start, edge.end
+    if start.x != end.x:
+        position = Fraction(point.x - start.x) / (end.x - start.x)
+    else:
+        position = Fraction(point.y - start.y) / (end.y - start.y)
+    scale = 1 << precision_bits
+    round_ = ceil if towards_end else floor
+    position = Fraction(round_(position * scale), scale)
+    return Point(start.x + position * (end.x - start.x),
+                 start.y + position * (end.y - start.y))
+
+
+def replace_vertices(contour: Contour,
+                     replacements: dict[Point, Point]) -> Contour:
+    """
+    Replaces vertices of the contour, dropping repeated ones.
+
+    Drops a replaced vertex if it is equal to the vertex before it,
+    which happens when it is rounded onto a neighboring vertex.
+
+    :param contour: contour to replace vertices in
+    :param replacements: new vertices by the old ones
+    :return: contour with the vertices replaced.
+    """
+    vertices: list[Point] = []
+    for vertex in contour.vertices:
+        replaced = replacements.get(vertex, vertex)
+        if not vertices or replaced != vertices[-1]:
+            vertices.append(replaced)
+    if len(vertices) > 1 and vertices[0] == vertices[-1]:
+        vertices.pop()
+    return Contour(vertices)
 
 
 def to_split_contours(partition: Partition) -> tuple[Contour, Contour]:
@@ -716,7 +940,7 @@ def fourth_root(fraction: Fraction) -> Fraction:
     on any global state. The result is exact if the numerator
     and the denominator are perfect fourth powers. Otherwise it is
     rounded down once (not once per square root) to a multiple
-    of a power of two so that it has at least `ROOT_PRECISION_BITS`
+    of a power of two so that it has at least `PRECISION_BITS`
     significant bits.
 
     :param fraction: non-negative number to take fourth root of
@@ -731,7 +955,7 @@ def fourth_root(fraction: Fraction) -> Fraction:
     if (numerator_root ** 4 == numerator
             and denominator_root ** 4 == denominator):
         return Fraction(numerator_root, denominator_root)
-    shift = max(0, ROOT_PRECISION_BITS
+    shift = max(0, PRECISION_BITS
                 - (numerator.bit_length() - denominator.bit_length()) // 4)
     scaled = (numerator << 4 * shift) // denominator
     return Fraction(floor_fourth_root(scaled), 1 << shift)

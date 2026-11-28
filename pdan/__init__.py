@@ -2,7 +2,7 @@
 
 __author__ = "Georgy Skorobogatov"
 __email__ = "skorobogatovgeorgy+github@gmail.com"
-__version__ = "0.2.5"
+__version__ = "0.3.0-alpha"
 
 from gon.base import (
     Contour,
@@ -11,12 +11,22 @@ from gon.base import (
     Segment,
 )
 
-from .pdan import minimizing_split
+from .pdan import (
+    minimizing_decomposition,
+    minimizing_split,
+)
+from .radicals import (
+    RadicalSum,
+    perimeter,
+)
 
 __all__ = [
     "Contour",
     "Point",
     "Polygon",
+    "RadicalSum",
     "Segment",
+    "minimizing_decomposition",
     "minimizing_split",
+    "perimeter",
 ]

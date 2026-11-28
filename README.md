@@ -12,10 +12,20 @@ pdan
 Summary
 -------
 
-`pdan` is a Python library that implements the algorithm of 
+`pdan` is a Python library that implements the algorithm of
 [Skorobogatov, G. et al., 2021](https://ieeexplore.ieee.org/abstract/document/9646907)
-for convex polygon decomposition into separate parts depending on the area 
-requirements.
+for dividing a convex polygon into parts with given areas, for example
+to divide a workspace among several robots.
+
+- `minimizing_split` cuts off one part with a given area, choosing the cut
+  that minimizes a user-supplied `key` function, such as the perimeter
+  of the part.
+- `minimizing_decomposition` divides the polygon into any number of parts
+  by cutting them off one at a time, from the largest area to the smallest.
+
+Arithmetic is exact, and all parts are convex.
+
+![Polygons divided into parts with given areas](https://raw.githubusercontent.com/GeorgySk/pdan/main/docs/images/decomposition.svg)
 
 ---
 
@@ -82,6 +92,71 @@ False
 True
 
 ```
+
+`minimizing_split` returns the part with the requested area first and the
+rest of the polygon second, both counterclockwise. `key` receives them in the
+same order, and its values only need to support comparison with `<`.
+An area requirement of zero gives empty geometry and the polygon,
+one equal to the area of the polygon gives the polygon and empty geometry.
+A negative requirement, one larger than the area of the polygon,
+or a contour that doesn't define a convex polygon raise `ValueError`.
+
+For example, with the perimeter of the part as `key`, the cut moves
+from a corner of the polygon to its middle as the requirement grows:
+
+![Parts with different areas cut off a polygon](https://raw.githubusercontent.com/GeorgySk/pdan/main/docs/images/split.svg)
+
+`key` chooses among the splits that are shortest between each pair of edges
+of the polygon, so it is meant for perimeter-like functions:
+other functions may not reach their minimum over all possible splits.
+
+### Decomposition into multiple parts
+
+`minimizing_decomposition` returns one part per area requirement, in the same
+order, with empty geometry for zero requirements. The requirements must sum
+exactly to the area of the polygon.
+
+Each cut depends on the previous ones, so exact coordinates grow exponentially
+with the number of parts. By default, the ends of each cut are therefore
+rounded to 96 bits along their edges: the parts still cover the polygon
+exactly, but their areas may differ from the requirements by a tiny amount
+(at most `2 ** (1 - precision_bits)` times the squared diameter of the
+polygon). Pass `precision_bits=None` for exact areas, which is practical only
+for a few parts.
+
+Exact perimeters (`Contour.length`) get slow to compare as the parts gain
+vertices and the coordinates grow, and soon hit Python's limit on integer
+string conversion. `perimeter` computes the same exact value as a
+`RadicalSum`, which compares in about the time a float key takes:
+it bounds both sides with integer arithmetic and only falls back to exact
+computations if the bounds don't settle the comparison. `RadicalSum`s can be
+added, subtracted, multiplied and compared with each other, with integers,
+`Fraction`s and floats:
+
+```python
+>>> from pdan import minimizing_decomposition, perimeter
+>>> requirements = [Fraction(1, 6), Fraction(1, 2), Fraction(1, 3)]
+>>> parts = minimizing_decomposition(
+...     contour, requirements,
+...     key=lambda part, rest: perimeter(part) + perimeter(rest),
+...     precision_bits=None)
+>>> [Polygon(part).area for part in parts] == requirements
+True
+>>> perimeter(parts[1]) == 3
+True
+>>> parts = minimizing_decomposition(contour, requirements,
+...                                  key=lambda part, _: perimeter(part))
+>>> all(abs(Polygon(part).area - requirement) < Fraction(1, 2 ** 90)
+...     for part, requirement in zip(parts, requirements))
+True
+>>> sum(Polygon(part).area for part in parts)
+Fraction(1, 1)
+
+```
+
+The key only decides which cut to make, so it doesn't stop the coordinates
+from growing: with `precision_bits=None`, they may double in size with every
+cut, and a single cut takes seconds after about eight of them.
 
 Development
 -----------
