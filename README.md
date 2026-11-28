@@ -25,6 +25,8 @@ to divide a workspace among several robots.
 
 Arithmetic is exact, and all parts are convex.
 
+![Polygons divided into parts with given areas](https://raw.githubusercontent.com/GeorgySk/pdan/main/docs/images/decomposition.svg)
+
 ---
 
 In what follows, `python` is an alias for `python3.11`
@@ -98,6 +100,11 @@ An area requirement of zero gives empty geometry and the polygon,
 one equal to the area of the polygon gives the polygon and empty geometry.
 A negative requirement, one larger than the area of the polygon,
 or a contour that doesn't define a convex polygon raise `ValueError`.
+
+For example, with the perimeter of the part as `key`, the cut moves
+from a corner of the polygon to its middle as the requirement grows:
+
+![Parts with different areas cut off a polygon](https://raw.githubusercontent.com/GeorgySk/pdan/main/docs/images/split.svg)
 
 `key` chooses among the splits that are shortest between each pair of edges
 of the polygon, so it is meant for perimeter-like functions:
