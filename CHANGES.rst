@@ -17,6 +17,13 @@ Added
   to ``precision_bits=96`` bits along their edges, which keeps the sizes
   of the coordinates growing linearly with the number of parts instead
   of exponentially; ``precision_bits=None`` keeps the areas exact.
+- ``perimeter`` returns the exact perimeter of a contour as a ``RadicalSum``,
+  an exact sum of products of square roots of rationals. It compares by
+  bounding both sides with integer arithmetic and falls back to exact
+  computations only if the bounds overlap, so as a ``key`` it runs about
+  as fast as a float key. ``Contour.length`` is just as exact, but becomes
+  too slow, or exceeds Python's limit on integer string conversion,
+  after a few cuts of ``minimizing_decomposition`` with exact areas.
 
 0.2.5 (2026-11-23)
 ------------------------------

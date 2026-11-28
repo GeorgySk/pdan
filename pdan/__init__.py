@@ -15,12 +15,18 @@ from .pdan import (
     minimizing_decomposition,
     minimizing_split,
 )
+from .radicals import (
+    RadicalSum,
+    perimeter,
+)
 
 __all__ = [
     "Contour",
     "Point",
     "Polygon",
+    "RadicalSum",
     "Segment",
     "minimizing_decomposition",
     "minimizing_split",
+    "perimeter",
 ]

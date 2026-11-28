@@ -118,21 +118,27 @@ polygon). Pass `precision_bits=None` for exact areas, which is practical only
 for a few parts.
 
 Exact perimeters (`Contour.length`) get slow to compare as the parts gain
-vertices, so use a float key such as:
+vertices and the coordinates grow, and soon hit Python's limit on integer
+string conversion. `perimeter` computes the same exact value as a
+`RadicalSum`, which compares in about the time a float key takes:
+it bounds both sides with integer arithmetic and only falls back to exact
+computations if the bounds don't settle the comparison. `RadicalSum`s can be
+added, subtracted, multiplied and compared with each other, with integers,
+`Fraction`s and floats:
 
 ```python
->>> from math import hypot
->>> from pdan import minimizing_decomposition
->>> def perimeter(part, _rest):
-...     return sum(hypot(segment.end.x - segment.start.x,
-...                      segment.end.y - segment.start.y)
-...                for segment in part.segments)
+>>> from pdan import minimizing_decomposition, perimeter
 >>> requirements = [Fraction(1, 6), Fraction(1, 2), Fraction(1, 3)]
->>> parts = minimizing_decomposition(contour, requirements, key=perimeter,
-...                                  precision_bits=None)
+>>> parts = minimizing_decomposition(
+...     contour, requirements,
+...     key=lambda part, rest: perimeter(part) + perimeter(rest),
+...     precision_bits=None)
 >>> [Polygon(part).area for part in parts] == requirements
 True
->>> parts = minimizing_decomposition(contour, requirements, key=perimeter)
+>>> perimeter(parts[1]) == 3
+True
+>>> parts = minimizing_decomposition(contour, requirements,
+...                                  key=lambda part, _: perimeter(part))
 >>> all(abs(Polygon(part).area - requirement) < Fraction(1, 2 ** 90)
 ...     for part, requirement in zip(parts, requirements))
 True
@@ -140,6 +146,10 @@ True
 Fraction(1, 1)
 
 ```
+
+The key only decides which cut to make, so it doesn't stop the coordinates
+from growing: with `precision_bits=None`, they may double in size with every
+cut, and a single cut takes seconds after about eight of them.
 
 Development
 -----------

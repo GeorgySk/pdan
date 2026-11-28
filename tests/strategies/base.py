@@ -3,6 +3,7 @@ from fractions import Fraction
 from gon.base import Contour
 from hypothesis import strategies as st
 
+from pdan.radicals import RadicalSum, perimeter
 from tests.config import (
     MAX_COORDINATE,
     MAX_DENOMINATOR,
@@ -69,6 +70,30 @@ def tuple_key(right: Contour, _left: Contour) -> tuple[int, float]:
 
 
 non_fraction_metrics = st.sampled_from([float_key, int_key, tuple_key])
+
+
+def perimeter_key(right: Contour, _left: Contour) -> RadicalSum:
+    return perimeter(right)
+
+
+def perimeters_sum_key(right: Contour, left: Contour) -> RadicalSum:
+    return perimeter(right) + perimeter(left)
+
+
+def perimeters_product_key(right: Contour, left: Contour) -> RadicalSum:
+    return perimeter(right) * perimeter(left)
+
+
+radical_metrics = st.sampled_from([perimeter_key,
+                                   perimeters_sum_key,
+                                   perimeters_product_key])
+
+
+# pairs of keys that order contours the same way
+equivalent_metrics = st.sampled_from([
+    (perimeter_key, lambda x, _: x.length),
+    (perimeters_sum_key, lambda x, y: x.length + y.length),
+])
 
 
 def normalize(requirements: list[Fraction]) -> list[Fraction]:

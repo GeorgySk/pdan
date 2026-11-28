@@ -25,6 +25,7 @@ from pdan.pdan import (
 from tests.strategies.base import (
     non_fraction_metrics,
     positive_nonzero_fractions,
+    radical_metrics,
 )
 from tests.strategies.geometry import (
     concave_contours,
@@ -36,8 +37,8 @@ Key = Callable[[Contour, Contour], SupportsLessThan]
 ContourWithRequirements = tuple[Contour, list[Fraction]]
 
 # exact perimeters (`Contour.length`) are too slow to compare
-# for the parts of decompositions
-keys = non_fraction_metrics
+# for the parts of decompositions, unlike `perimeter`
+keys = non_fraction_metrics | radical_metrics
 precisions = st.none() | st.integers(1, 128)
 
 
